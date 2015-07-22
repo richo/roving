@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+
+	"github.com/richo/roving/types"
 )
 
 type Server struct {
@@ -17,11 +21,6 @@ type Fuzzer struct {
 }
 
 func (f *Fuzzer) run() {
-	// HACK
-	os.Mkdir("input", 0755)
-	fh, _ := os.OpenFile("input/hi", os.O_WRONLY|os.O_CREATE, 0755)
-	fh.Write([]byte("hi"))
-	fh.Close()
 	cmd := exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
@@ -95,6 +94,33 @@ func (s *Server) FetchTarget() {
 	s.fetchToFile("target", "target")
 }
 
+func (s *Server) FetchInputs() {
+	os.Mkdir("input", 0755)
+
+	inputs := s.getPath("inputs")
+	defer inputs.Body.Close()
+
+	inps := &types.InputCorpus{}
+
+	encoder := json.NewDecoder(inputs.Body)
+	encoder.Decode(&inps)
+
+	for _, inp := range inps.Inputs {
+		path := fmt.Sprintf("input/%s", inp.Name)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0755)
+
+		if err != nil {
+			log.Panicf("Couldn't open %s for writing", path, err)
+		}
+
+		body, err := base64.StdEncoding.DecodeString(inp.Body)
+		if err != nil {
+			log.Fatalf("Couldn't decode body for %s", inp.Name, err)
+		}
+		f.Write([]byte(body))
+	}
+}
+
 func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
@@ -120,6 +146,7 @@ func main() {
 
 	server := Server{args[1]}
 	server.FetchTarget()
+	server.FetchInputs()
 
 	fuzzer := Fuzzer{}
 	fuzzer.run()
