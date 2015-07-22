@@ -15,7 +15,7 @@ target: example/target.c
 	AFL_HARDEN=1 $(AFL)/afl-clang -o $@ $<
 
 run: client/client
-	rm -f work
+	rm -rf work
 	$(CURDIR)/client/client localhost:8000
 
 # Debug pretty printer
