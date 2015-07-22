@@ -26,7 +26,7 @@ func (s *Server) fetchToFile(resource, file string) {
 }
 
 func (s *Server) getPath(path string) *http.Response {
-	resource := fmt.Sprintf("http://%s/%s", s.hostport)
+	resource := fmt.Sprintf("http://%s/%s", s.hostport, path)
 	log.Printf("Fetching %s", resource)
 
 	resp, err := http.Get(resource)
