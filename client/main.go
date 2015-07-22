@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"syscall"
+	"time"
 
 	"github.com/richo/roving/types"
 )
@@ -18,25 +20,31 @@ type Server struct {
 }
 
 type Fuzzer struct {
+	cmd *exec.Cmd
+}
+
+type WatchDog struct {
+	Interval time.Duration
+	Fuzzer   *Fuzzer
 }
 
 func (f *Fuzzer) run() {
-	cmd := exec.Command(f.path(),
+	f.cmd = exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
 		"./target",
 	)
-	stdout, err := cmd.StdoutPipe()
+	stdout, err := f.cmd.StdoutPipe()
 	if err != nil {
 		log.Fatalf("Couldn't get stdout handle", err)
 	}
 
-	stderr, err := cmd.StderrPipe()
+	stderr, err := f.cmd.StderrPipe()
 	if err != nil {
 		log.Fatalf("Couldn't get stderr handle", err)
 	}
 
-	if err := cmd.Start(); err != nil {
+	if err := f.cmd.Start(); err != nil {
 		log.Fatalf("Couldn't start fuzzer", err)
 	}
 
@@ -50,11 +58,21 @@ func (f *Fuzzer) run() {
 
 	log.Printf("Waiting for fuzzer to exit")
 
-	err = cmd.Wait()
+	err = f.cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+}
+
+func (f *Fuzzer) stop() {
+	log.Printf("Stopping the fuzzer")
+	f.cmd.Process.Signal(syscall.SIGSTOP)
+}
+
+func (f *Fuzzer) start() {
+	log.Printf("Starting the fuzzer")
+	f.cmd.Process.Signal(syscall.SIGCONT)
 }
 
 func (f *Fuzzer) path() string {
@@ -63,6 +81,20 @@ func (f *Fuzzer) path() string {
 		return "afl-fuzz"
 	}
 	return fmt.Sprintf("%s/afl-fuzz", root)
+}
+
+func (w *WatchDog) run() {
+	log.Printf("Starting watchdog goroutine")
+	ticker := time.NewTicker(w.Interval)
+	for {
+		select {
+		case <-ticker.C:
+			w.Fuzzer.stop()
+			log.Printf("Uploading our corpus")
+			log.Printf("Downloading their corpus")
+			w.Fuzzer.start()
+		}
+	}
 }
 
 func (s *Server) fetchToFile(resource, file string) {
@@ -149,6 +181,13 @@ func main() {
 	server.FetchInputs()
 
 	fuzzer := Fuzzer{}
+
+	watchdog := WatchDog{
+		Interval: 15 * time.Minute,
+		Fuzzer:   &fuzzer,
+	}
+	go watchdog.run()
+
 	fuzzer.run()
 
 	// TODO(richo) Fetch the input corpus
