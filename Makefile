@@ -1,4 +1,4 @@
-AFL ?= ~/afls/afl-1.83b/
+export AFL ?= $(HOME)/afls/afl-1.83b
 
 all: server/server client/client
 
