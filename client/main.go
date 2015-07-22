@@ -8,6 +8,39 @@ import (
 	"os"
 )
 
+type Server struct {
+	hostport string
+}
+
+func (s *Server) fetchToFile(resource, file string) {
+	target := s.getPath(resource)
+	defer target.Body.Close()
+
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0755)
+
+	if err != nil {
+		log.Panicf("Couldn't open %s for writing", file, err)
+	}
+
+	io.Copy(f, target.Body)
+}
+
+func (s *Server) getPath(path string) *http.Response {
+	resource := fmt.Sprintf("http://%s/%s", s.hostport)
+	log.Printf("Fetching %s", resource)
+
+	resp, err := http.Get(resource)
+	if err != nil {
+		log.Panicf("Couldn't fetch target", err)
+	}
+
+	return resp
+}
+
+func (s *Server) FetchTarget() {
+	s.fetchToFile("target", "target")
+}
+
 func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
@@ -19,23 +52,7 @@ func setupWorkDir() {
 	}
 }
 
-func fetchTarget(server string) {
-	log.Printf("Fetching target from %s", server)
-	target := fmt.Sprintf("http://%s/target", server)
-	resp, err := http.Get(target)
-	if err != nil {
-		log.Panicf("Couldn't fetch target", err)
-	}
-
-	defer resp.Body.Close()
-
-	f, err := os.OpenFile("target", os.O_WRONLY|os.O_CREATE, 0755)
-
-	if err != nil {
-		log.Panicf("Couldn't open target for writing", err)
-	}
-
-	io.Copy(f, resp.Body)
+func fetchCorpus(server string) {
 }
 
 func main() {
@@ -46,5 +63,7 @@ func main() {
 	}
 
 	setupWorkDir()
-	fetchTarget(args[1])
+
+	server := Server{args[1]}
+	server.FetchTarget()
 }
