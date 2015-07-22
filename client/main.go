@@ -26,6 +26,7 @@ type Fuzzer struct {
 type WatchDog struct {
 	Interval time.Duration
 	Fuzzer   *Fuzzer
+	Server   *Server
 }
 
 func (f *Fuzzer) run() {
@@ -75,6 +76,24 @@ func (f *Fuzzer) start() {
 	f.cmd.Process.Signal(syscall.SIGCONT)
 }
 
+func (f *Fuzzer) Id() string {
+	// TODO(richo) Include an actual id not just the hostname at some point
+	name, err := os.Hostname()
+	if err != nil {
+		log.Fatal("Couldn't get hostname", err)
+	}
+	return name
+}
+
+func (f *Fuzzer) State() types.State {
+	state := types.State{
+		Id:    f.Id(),
+		Queue: types.ReadCorpus("output/queue"),
+	}
+
+	return state
+}
+
 func (f *Fuzzer) path() string {
 	root := os.Getenv("AFL")
 	if root == "" { // Not found, hopefully it's in PATH
@@ -91,6 +110,8 @@ func (w *WatchDog) run() {
 		case <-ticker.C:
 			w.Fuzzer.stop()
 			log.Printf("Uploading our corpus")
+			state := w.Fuzzer.State()
+			w.Server.UploadState(state)
 			log.Printf("Downloading their corpus")
 			w.Fuzzer.start()
 		}
@@ -153,6 +174,9 @@ func (s *Server) FetchInputs() {
 	}
 }
 
+func (s *Server) UploadState(state types.State) {
+}
+
 func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
@@ -185,6 +209,7 @@ func main() {
 	watchdog := WatchDog{
 		Interval: 15 * time.Minute,
 		Fuzzer:   &fuzzer,
+		Server:   &server,
 	}
 	go watchdog.run()
 

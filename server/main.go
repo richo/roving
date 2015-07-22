@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -20,12 +19,6 @@ import (
 
 var binary []byte
 
-type QueueMember []byte
-
-type NodeState struct {
-	Queue []QueueMember
-}
-
 func put(c web.C, w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Put a thing")
 }
@@ -42,28 +35,7 @@ func target(c web.C, w http.ResponseWriter, r *http.Request) {
 func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	corpus := types.InputCorpus{}
-
-	files, err := ioutil.ReadDir("input")
-	if err != nil {
-		log.Fatalf("Couldn't open input directory", err)
-	}
-
-	for _, f := range files {
-		path := fmt.Sprintf("input/%s", f.Name())
-		var buf []byte
-
-		buf, err = ioutil.ReadFile(path)
-		if err != nil {
-			log.Fatalf("Couldn't read %s", path, err)
-		}
-
-		inp := types.Input{
-			Name: f.Name(),
-			Body: base64.StdEncoding.EncodeToString(buf),
-		}
-		corpus.Add(inp)
-	}
+	corpus := types.ReadCorpus("input")
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(corpus)
