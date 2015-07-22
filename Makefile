@@ -2,10 +2,10 @@ export AFL ?= $(HOME)/afls/afl-1.83b
 
 all: server/server client/client
 
-server/server: $(wildcard server/*.go)
+server/server: $(wildcard server/*.go) $(wildcard types/*.go)
 	cd server && go build
 
-client/client: $(wildcard client/*.go)
+client/client: $(wildcard client/*.go) $(wildcard types/*.go)
 	cd client && go build
 
 serve: server/server

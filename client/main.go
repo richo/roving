@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -175,6 +176,19 @@ func (s *Server) FetchInputs() {
 }
 
 func (s *Server) UploadState(state types.State) {
+	data, err := json.Marshal(state)
+	if err != nil {
+		log.Fatal("Couldn't marshall state", err)
+	}
+
+	buffer := bytes.NewReader(data)
+
+	resource := fmt.Sprintf("http://%s/%s", s.hostport, "state")
+	_, err = http.Post(resource, "application/json", buffer)
+
+	if err != nil {
+		log.Panicf("Couldn't upload state", err)
+	}
 }
 
 func setupWorkDir() {
@@ -207,7 +221,7 @@ func main() {
 	fuzzer := Fuzzer{}
 
 	watchdog := WatchDog{
-		Interval: 15 * time.Minute,
+		Interval: 5 * time.Minute,
 		Fuzzer:   &fuzzer,
 		Server:   &server,
 	}

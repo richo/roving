@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -19,12 +18,20 @@ import (
 
 var binary []byte
 
-func put(c web.C, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Put a thing")
+var nodes = make(map[string]types.State)
+
+func post(c web.C, w http.ResponseWriter, r *http.Request) {
+	state := types.State{}
+
+	encoder := json.NewDecoder(r.Body)
+	encoder.Decode(&state)
+
+	nodes[state.Id] = state
+
+	log.Printf("Got state:", state)
 }
 
 func get(c web.C, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Got a thing")
 }
 
 func target(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -42,7 +49,7 @@ func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func setupAndServe() {
-	goji.Put("/state", put)
+	goji.Post("/state", post)
 	goji.Get("/state", get)
 	goji.Get("/target", target)
 	goji.Get("/inputs", inputs)
