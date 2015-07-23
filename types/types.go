@@ -29,7 +29,6 @@ type State struct {
 	Id    string
 	Stats FuzzerStats
 	Queue InputCorpus
-	State string
 }
 
 // This doesn't belong here but what the hell
