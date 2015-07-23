@@ -94,8 +94,10 @@ func (f *Fuzzer) start() {
 
 func (f *Fuzzer) State() types.State {
 	state := types.State{
-		Id:    f.Id,
-		Queue: types.ReadQueue(fmt.Sprintf("output/%s/queue", f.Id)),
+		Id:      f.Id,
+		Queue:   types.ReadQueue(fmt.Sprintf("output/%s/queue", f.Id)),
+		Crashes: types.ReadDir(fmt.Sprintf("output/%s/crashes", f.Id)),
+		Hangs:   types.ReadDir(fmt.Sprintf("output/%s/hangs", f.Id)),
 	}
 
 	return state
@@ -257,9 +259,6 @@ func setupWorkDir() {
 	if err = os.Chdir("work"); err != nil {
 		log.Panicf("Couldn't change to workdir", err)
 	}
-}
-
-func fetchCorpus(server string) {
 }
 
 func main() {

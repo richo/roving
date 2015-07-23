@@ -48,7 +48,7 @@ func target(c web.C, w http.ResponseWriter, r *http.Request) {
 func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	corpus := types.ReadCorpus("input")
+	corpus := types.ReadDir("input")
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(corpus)

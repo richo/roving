@@ -28,16 +28,15 @@ type FuzzerStats struct {
 }
 
 type State struct {
-	Id    string
-	Stats FuzzerStats
-	Queue string
+	Id      string
+	Stats   FuzzerStats
+	Queue   string
+	Crashes InputCorpus
+	Hangs   InputCorpus
 }
 
-// This doesn't belong here but what the hell
-
-// This is mostly defunct, but I'm keeping it around because it'll form the
-// backing for pushing hangs and crashes
-func ReadCorpus(path string) InputCorpus {
+// Read the contents of a directory out
+func ReadDir(path string) InputCorpus {
 	corpus := InputCorpus{}
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
