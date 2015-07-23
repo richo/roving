@@ -9,6 +9,7 @@ client/client: $(wildcard client/*.go) $(wildcard types/*.go)
 	cd client && go build
 
 serve: server/server
+	rm -rf work-server
 	$(CURDIR)/server/server
 
 target: example/target.c
