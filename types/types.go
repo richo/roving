@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
 	"os/exec"
 )
 
@@ -21,6 +22,22 @@ func (i *InputCorpus) Add(other Input) {
 type Input struct {
 	Name string
 	Body string // Base64 encoded body
+}
+
+func (i *Input) WriteToPath(path string) {
+	path = fmt.Sprintf("%s/%s", path, i.Name)
+
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Panicf("Couldn't open %s for writing", path, err)
+	}
+
+	body, err := base64.StdEncoding.DecodeString(i.Body)
+	if err != nil {
+		log.Fatal("Couldn't decode queue from %s", i.Name, err)
+	}
+
+	f.Write([]byte(body))
 }
 
 // TODO(richo) flesh this out at some point

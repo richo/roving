@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"net/http"
 
@@ -25,6 +26,14 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewDecoder(r.Body)
 	encoder.Decode(&state)
+
+	for _, hang := range state.Hangs.Inputs {
+		hang.WriteToPath("work-server/hangs")
+	}
+
+	for _, crash := range state.Crashes.Inputs {
+		crash.WriteToPath("work-server/crashes")
+	}
 
 	nodes[state.Id] = state
 }
@@ -67,6 +76,25 @@ func main() {
 	binary, err = ioutil.ReadFile("target")
 	if err != nil {
 		log.Panicf("Couldn't load target")
+	}
+
+	fatal := func() {
+		log.Fatal("Couldn't make server workdir, maybe you already have one?")
+	}
+
+	err = os.Mkdir("work-server", 0755)
+	if err != nil {
+		fatal()
+	}
+
+	err = os.Mkdir("work-server/hangs", 0755)
+	if err != nil {
+		fatal()
+	}
+
+	err = os.Mkdir("work-server/crashes", 0755)
+	if err != nil {
+		fatal()
 	}
 
 	setupAndServe()
