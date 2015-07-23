@@ -48,6 +48,7 @@ func (f *Fuzzer) run() {
 	f.cmd = exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
+		"-S", f.Id,
 		"./target",
 	)
 	stdout, err := f.cmd.StdoutPipe()
