@@ -95,7 +95,7 @@ func (f *Fuzzer) start() {
 func (f *Fuzzer) State() types.State {
 	state := types.State{
 		Id:    f.Id,
-		Queue: types.ReadCorpus("output/queue"),
+		Queue: types.ReadCorpus(fmt.Sprintf("output/%s/queue", f.Id)),
 	}
 
 	return state
@@ -196,7 +196,7 @@ func (s *Fuzzer) UnpackStates(other []types.State) {
 	for _, state := range other {
 		log.Printf("Unpacking state from %s", state.Id)
 		for _, input := range state.Queue.Inputs {
-			base64ToPath(input.Body, fmt.Sprintf("output/queue/%s", input.Name))
+			base64ToPath(input.Body, fmt.Sprintf("output/%s/queue/%s", state.Id, input.Name))
 		}
 	}
 }
@@ -259,7 +259,7 @@ func main() {
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
 	watchdog := WatchDog{
-		Interval: 5 * time.Minute,
+		Interval: 3 * time.Second,
 		Fuzzer:   &fuzzer,
 		Server:   &server,
 	}
