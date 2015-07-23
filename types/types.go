@@ -61,10 +61,6 @@ func ReadDir(path string) InputCorpus {
 	}
 
 	for _, f := range files {
-		if f.Name() == ".state" {
-			// This gets pulled out in a different pass
-			continue
-		}
 		path := fmt.Sprintf("%s/%s", path, f.Name())
 		var buf []byte
 
