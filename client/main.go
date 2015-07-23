@@ -110,10 +110,17 @@ func (w *WatchDog) run() {
 		select {
 		case <-ticker.C:
 			w.Fuzzer.stop()
+
 			log.Printf("Uploading our corpus")
 			state := w.Fuzzer.State()
 			w.Server.UploadState(state)
+
 			log.Printf("Downloading their corpus")
+			other := w.Server.FetchState(w.Fuzzer.Id())
+
+			log.Printf("Unpacking their state")
+			w.Fuzzer.UnpackStates(other)
+
 			w.Fuzzer.start()
 		}
 	}
@@ -148,6 +155,20 @@ func (s *Server) FetchTarget() {
 	s.fetchToFile("target", "target")
 }
 
+func base64ToPath(content, path string) {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0755)
+
+	if err != nil {
+		log.Panicf("Couldn't open %s for writing", path, err)
+	}
+
+	body, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		log.Fatalf("Couldn't decode body for %s", path, err)
+	}
+	f.Write([]byte(body))
+}
+
 func (s *Server) FetchInputs() {
 	os.Mkdir("input", 0755)
 
@@ -161,18 +182,27 @@ func (s *Server) FetchInputs() {
 
 	for _, inp := range inps.Inputs {
 		path := fmt.Sprintf("input/%s", inp.Name)
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0755)
-
-		if err != nil {
-			log.Panicf("Couldn't open %s for writing", path, err)
-		}
-
-		body, err := base64.StdEncoding.DecodeString(inp.Body)
-		if err != nil {
-			log.Fatalf("Couldn't decode body for %s", inp.Name, err)
-		}
-		f.Write([]byte(body))
+		base64ToPath(inp.Body, path)
 	}
+}
+
+func (s *Fuzzer) UnpackStates(other []types.State) {
+	for _, state := range other {
+		log.Printf("Unpacking state from %s", state.Id)
+		for _, input := range state.Queue.Inputs {
+			base64ToPath(input.Body, fmt.Sprintf("output/queue/%s", input.Name))
+		}
+	}
+}
+
+func (s *Server) FetchState(id string) []types.State {
+	var state []types.State
+	resp := s.getPath(fmt.Sprintf("state/%s", id))
+
+	encoder := json.NewDecoder(resp.Body)
+	encoder.Decode(&state)
+
+	return state
 }
 
 func (s *Server) UploadState(state types.State) {

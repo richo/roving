@@ -27,11 +27,17 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Decode(&state)
 
 	nodes[state.Id] = state
-
-	log.Printf("Got state:", state)
 }
 
 func get(c web.C, w http.ResponseWriter, r *http.Request) {
+	var values []types.State
+	for _, v := range nodes {
+		values = append(values, v)
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(values)
 }
 
 func target(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -50,7 +56,7 @@ func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func setupAndServe() {
 	goji.Post("/state", post)
-	goji.Get("/state", get)
+	goji.Get("/state/:id", get)
 	goji.Get("/target", target)
 	goji.Get("/inputs", inputs)
 	goji.Serve()
