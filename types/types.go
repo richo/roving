@@ -1,10 +1,12 @@
 package types
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os/exec"
 )
 
@@ -71,4 +73,13 @@ func ReadState(path string) string {
 		log.Fatalf("Couldn't tar up %s", fullpath, err)
 	}
 	return base64.StdEncoding.EncodeToString(output)
+}
+
+func RandInt() int64 {
+	to := big.NewInt(1 << 62)
+	i, err := rand.Int(rand.Reader, to)
+	if err != nil {
+		log.Fatal("Couldn't get a random number", err)
+	}
+	return i.Int64()
 }

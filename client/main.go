@@ -22,6 +22,20 @@ type Server struct {
 
 type Fuzzer struct {
 	cmd *exec.Cmd
+	Id  string
+}
+
+func newFuzzer() Fuzzer {
+	name, err := os.Hostname()
+	if err != nil {
+		log.Fatal("Couldn't get hostname", err)
+	}
+
+	number := types.RandInt() & 0xffff
+
+	return Fuzzer{
+		Id: fmt.Sprintf("%s-%x", name, number),
+	}
 }
 
 type WatchDog struct {
@@ -77,18 +91,9 @@ func (f *Fuzzer) start() {
 	f.cmd.Process.Signal(syscall.SIGCONT)
 }
 
-func (f *Fuzzer) Id() string {
-	// TODO(richo) Include an actual id not just the hostname at some point
-	name, err := os.Hostname()
-	if err != nil {
-		log.Fatal("Couldn't get hostname", err)
-	}
-	return name
-}
-
 func (f *Fuzzer) State() types.State {
 	state := types.State{
-		Id:    f.Id(),
+		Id:    f.Id,
 		Queue: types.ReadCorpus("output/queue"),
 	}
 
@@ -116,7 +121,7 @@ func (w *WatchDog) run() {
 			w.Server.UploadState(state)
 
 			log.Printf("Downloading their corpus")
-			other := w.Server.FetchState(w.Fuzzer.Id())
+			other := w.Server.FetchState(w.Fuzzer.Id)
 
 			log.Printf("Unpacking their state")
 			w.Fuzzer.UnpackStates(other)
@@ -248,7 +253,9 @@ func main() {
 	server.FetchTarget()
 	server.FetchInputs()
 
-	fuzzer := Fuzzer{}
+	fuzzer := newFuzzer()
+
+	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
 	watchdog := WatchDog{
 		Interval: 5 * time.Minute,
