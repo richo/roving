@@ -90,6 +90,7 @@ func (f *Fuzzer) State() types.State {
 	state := types.State{
 		Id:    f.Id(),
 		Queue: types.ReadCorpus("output/queue"),
+		State: types.ReadState("output/queue"),
 	}
 
 	return state
