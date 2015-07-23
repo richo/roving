@@ -95,7 +95,7 @@ func (f *Fuzzer) start() {
 func (f *Fuzzer) State() types.State {
 	state := types.State{
 		Id:    f.Id,
-		Queue: types.ReadCorpus(fmt.Sprintf("output/%s/queue", f.Id)),
+		Queue: types.ReadQueue(fmt.Sprintf("output/%s/queue", f.Id)),
 	}
 
 	return state
@@ -194,10 +194,31 @@ func (s *Server) FetchInputs() {
 
 func (s *Fuzzer) UnpackStates(other []types.State) {
 	for _, state := range other {
-		log.Printf("Unpacking state from %s", state.Id)
-		for _, input := range state.Queue.Inputs {
-			base64ToPath(input.Body, fmt.Sprintf("output/%s/queue/%s", state.Id, input.Name))
+		cmd := exec.Command("tar", "-kxjf", "-")
+
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			log.Fatalf("Couldn't get stdin handle", err)
 		}
+
+		body, err := base64.StdEncoding.DecodeString(state.Queue)
+		if err != nil {
+			log.Fatal("Couldn't decode queue from %s", state.Id, err)
+		}
+
+		go func() {
+			_, err := stdin.Write(body)
+			if err != nil {
+				log.Fatal("Error writing data into tar", err)
+			}
+			stdin.Close()
+		}()
+
+		_ = cmd.Run()
+		// YOLO
+		// if err != nil {
+		// 	log.Fatalf("Couldn't untar state from %s", state.Id, err)
+		// }
 	}
 }
 
@@ -259,7 +280,7 @@ func main() {
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
 	watchdog := WatchDog{
-		Interval: 3 * time.Second,
+		Interval: 5 * time.Minute,
 		Fuzzer:   &fuzzer,
 		Server:   &server,
 	}

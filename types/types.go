@@ -30,11 +30,13 @@ type FuzzerStats struct {
 type State struct {
 	Id    string
 	Stats FuzzerStats
-	Queue InputCorpus
+	Queue string
 }
 
 // This doesn't belong here but what the hell
 
+// This is mostly defunct, but I'm keeping it around because it'll form the
+// backing for pushing hangs and crashes
 func ReadCorpus(path string) InputCorpus {
 	corpus := InputCorpus{}
 	files, err := ioutil.ReadDir(path)
@@ -64,13 +66,12 @@ func ReadCorpus(path string) InputCorpus {
 	return corpus
 }
 
-func ReadState(path string) string {
-	fullpath := fmt.Sprintf("%s/.state", path)
-	cmd := exec.Command("tar", "-cjf", "-", fullpath)
+func ReadQueue(path string) string {
+	cmd := exec.Command("tar", "-cjf", "-", path)
 
 	output, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("Couldn't tar up %s", fullpath, err)
+		log.Fatalf("Couldn't tar up %s", path, err)
 	}
 	return base64.StdEncoding.EncodeToString(output)
 }
