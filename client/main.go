@@ -226,13 +226,13 @@ func (s *Server) UploadState(state types.State) {
 	}
 }
 
-func setupWorkDir(id string) {
+func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
-	if err = os.Mkdir(id, 0755); err != nil {
+	if err = os.Mkdir("work", 0755); err != nil {
 		log.Panicf("Couldn't make workdir", err)
 	}
-	if err = os.Chdir(id); err != nil {
+	if err = os.Chdir("work"); err != nil {
 		log.Panicf("Couldn't change to workdir", err)
 	}
 }
@@ -247,12 +247,13 @@ func main() {
 		return
 	}
 
-	fuzzer := newFuzzer()
-	setupWorkDir(fuzzer.Id)
+	setupWorkDir()
 
 	server := Server{args[1]}
 	server.FetchTarget()
 	server.FetchInputs()
+
+	fuzzer := newFuzzer()
 
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
