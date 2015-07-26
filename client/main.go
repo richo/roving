@@ -254,7 +254,7 @@ func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
 	if err = os.Mkdir("work", 0755); err != nil {
-		log.Panicf("Couldn't make workdir", err)
+		log.Println("Workdir already exists, assuming we're joining an existing run")
 	}
 	if err = os.Chdir("work"); err != nil {
 		log.Panicf("Couldn't change to workdir", err)
