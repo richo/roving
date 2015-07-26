@@ -278,8 +278,15 @@ func main() {
 
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
+	var interval time.Duration
+	if os.Getenv("SHORT_INTERVAL") != "" {
+		interval = 3 * time.Second
+	} else {
+		interval = 10 * time.Minute
+	}
+
 	watchdog := WatchDog{
-		Interval: 5 * time.Minute,
+		Interval: interval,
 		Fuzzer:   &fuzzer,
 		Server:   &server,
 	}
