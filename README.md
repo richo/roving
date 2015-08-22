@@ -43,6 +43,6 @@ This is super lightly tested, YMMV, patches/bug reports accepted, etc.
 I asked some of my coworkers what they'd name a distributed fuzzy thing.
 
 Evidently [roving][0] is extremely fuzzy, and winds up **everywhere** when
-you're working with it. Plus the testcases go roaming and it's all very poetic.
+you're working with it. Plus the testcases go roving and it's all very poetic.
 
 [0]: https://en.wikipedia.org/wiki/Roving
