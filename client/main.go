@@ -118,6 +118,7 @@ func (w *WatchDog) run() {
 		select {
 		case <-ticker.C:
 			w.Fuzzer.stop()
+			defer w.Fuzzer.start()
 
 			log.Printf("Uploading our corpus")
 			state := w.Fuzzer.State()
@@ -128,8 +129,6 @@ func (w *WatchDog) run() {
 
 			log.Printf("Unpacking their state")
 			w.Fuzzer.UnpackStates(other)
-
-			w.Fuzzer.start()
 		}
 	}
 }
