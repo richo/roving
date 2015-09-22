@@ -25,6 +25,8 @@ type Fuzzer struct {
 	Id  string
 }
 
+var preExisting bool = false
+
 func newFuzzer() Fuzzer {
 	name, err := os.Hostname()
 	if err != nil {
@@ -133,17 +135,19 @@ func (w *WatchDog) run() {
 	}
 }
 
-func (s *Server) fetchToFile(resource, file string) {
+func (s *Server) fetchToFile(resource, file string) error {
 	target := s.getPath(resource)
 	defer target.Body.Close()
 
 	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0755)
 
 	if err != nil {
-		log.Panicf("Couldn't open %s for writing", file, err)
+		return err
 	}
 
 	io.Copy(f, target.Body)
+
+	return nil
 }
 
 func (s *Server) getPath(path string) *http.Response {
@@ -159,7 +163,13 @@ func (s *Server) getPath(path string) *http.Response {
 }
 
 func (s *Server) FetchTarget() {
-	s.fetchToFile("target", "target")
+	if err := s.fetchToFile("target", "target"); err != nil {
+		if preExisting {
+			log.Printf("Couldn't write target, ignoring since this tree is preexisting")
+		} else {
+			log.Fatalf("Couldn't fetch target: %s", err)
+		}
+	}
 }
 
 func base64ToPath(content, path string) {
@@ -254,6 +264,7 @@ func setupWorkDir() {
 	// TODO(richo) Ephemeral workdirs for concurrency
 	if err = os.Mkdir("work", 0755); err != nil {
 		log.Println("Workdir already exists, assuming we're joining an existing run")
+		preExisting = true
 	}
 	if err = os.Chdir("work"); err != nil {
 		log.Panicf("Couldn't change to workdir", err)
