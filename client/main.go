@@ -21,8 +21,9 @@ type Server struct {
 }
 
 type Fuzzer struct {
-	cmd *exec.Cmd
-	Id  string
+	cmd     *exec.Cmd
+	Id      string
+	started bool
 }
 
 var preExisting bool = false
@@ -36,7 +37,8 @@ func newFuzzer() Fuzzer {
 	number := types.RandInt() & 0xffff
 
 	return Fuzzer{
-		Id: fmt.Sprintf("%s-%x", name, number),
+		Id:      fmt.Sprintf("%s-%x", name, number),
+		started: false,
 	}
 }
 
@@ -76,12 +78,12 @@ func (f *Fuzzer) run() {
 	}()
 
 	log.Printf("Waiting for fuzzer to exit")
+	f.started = true
 
 	err = f.cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func (f *Fuzzer) stop() {
@@ -126,8 +128,10 @@ func (w *WatchDog) run() {
 }
 
 func (w *WatchDog) syncState() {
-	w.Fuzzer.stop()
-	defer w.Fuzzer.start()
+	if w.Fuzzer.started {
+		w.Fuzzer.stop()
+		defer w.Fuzzer.start()
+	}
 
 	log.Printf("Uploading our corpus")
 	state := w.Fuzzer.State()
