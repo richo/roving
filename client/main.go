@@ -116,23 +116,28 @@ func (f *Fuzzer) path() string {
 func (w *WatchDog) run() {
 	log.Printf("Starting watchdog goroutine")
 	ticker := time.NewTicker(w.Interval)
+
 	for {
 		select {
 		case <-ticker.C:
-			w.Fuzzer.stop()
-			defer w.Fuzzer.start()
-
-			log.Printf("Uploading our corpus")
-			state := w.Fuzzer.State()
-			w.Server.UploadState(state)
-
-			log.Printf("Downloading their corpus")
-			other := w.Server.FetchState(w.Fuzzer.Id)
-
-			log.Printf("Unpacking their state")
-			w.Fuzzer.UnpackStates(other)
+			w.syncState()
 		}
 	}
+}
+
+func (w *WatchDog) syncState() {
+	w.Fuzzer.stop()
+	defer w.Fuzzer.start()
+
+	log.Printf("Uploading our corpus")
+	state := w.Fuzzer.State()
+	w.Server.UploadState(state)
+
+	log.Printf("Downloading their corpus")
+	other := w.Server.FetchState(w.Fuzzer.Id)
+
+	log.Printf("Unpacking their state")
+	w.Fuzzer.UnpackStates(other)
 }
 
 func (s *Server) fetchToFile(resource, file string) error {
@@ -300,6 +305,10 @@ func main() {
 		Fuzzer:   &fuzzer,
 		Server:   &server,
 	}
+
+	log.Printf("Priming with upstream state")
+	watchdog.syncState()
+
 	go watchdog.run()
 
 	fuzzer.run()
