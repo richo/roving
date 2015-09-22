@@ -131,11 +131,11 @@ func (w *WatchDog) syncState() {
 	if w.Fuzzer.started {
 		w.Fuzzer.stop()
 		defer w.Fuzzer.start()
-	}
 
-	log.Printf("Uploading our corpus")
-	state := w.Fuzzer.State()
-	w.Server.UploadState(state)
+		log.Printf("Uploading our corpus")
+		state := w.Fuzzer.State()
+		w.Server.UploadState(state)
+	}
 
 	log.Printf("Downloading their corpus")
 	other := w.Server.FetchState(w.Fuzzer.Id)
