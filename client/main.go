@@ -48,7 +48,7 @@ type WatchDog struct {
 	Server   *Server
 }
 
-func (f *Fuzzer) run() {
+func (f *Fuzzer) run() error {
 	f.cmd = exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
@@ -80,10 +80,7 @@ func (f *Fuzzer) run() {
 	log.Printf("Waiting for fuzzer to exit")
 	f.started = true
 
-	err = f.cmd.Wait()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return f.cmd.Wait()
 }
 
 func (f *Fuzzer) stop() {
@@ -131,12 +128,19 @@ func (w *WatchDog) syncState() {
 	if w.Fuzzer.started {
 		w.Fuzzer.stop()
 		defer w.Fuzzer.start()
-
-		log.Printf("Uploading our corpus")
-		state := w.Fuzzer.State()
-		w.Server.UploadState(state)
+		w.uploadState()
 	}
 
+	w.downloadState()
+}
+
+func (w *WatchDog) uploadState() {
+	log.Printf("Uploading our corpus")
+	state := w.Fuzzer.State()
+	w.Server.UploadState(state)
+}
+
+func (w *WatchDog) downloadState() {
 	log.Printf("Downloading their corpus")
 	other := w.Server.FetchState(w.Fuzzer.Id)
 
@@ -315,7 +319,11 @@ func main() {
 
 	go watchdog.run()
 
-	fuzzer.run()
+	err := fuzzer.run()
 
-	// TODO(richo) Fetch the input corpus
+	watchdog.uploadState()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
