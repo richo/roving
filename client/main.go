@@ -37,8 +37,9 @@ func init() {
 
 func usableHostName(orig string) (valid string) {
 	valid = invalidFuzzerNames.ReplaceAllString(orig, "_")
-	if len(valid) > 32 {
-		valid = valid[0:32]
+	// fuzzer name is ${hostname}-xxxx, so this string can be max 29 chars
+	if len(valid) > 29 {
+		valid = valid[0:29]
 	}
 	return
 }
