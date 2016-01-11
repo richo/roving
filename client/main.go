@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -28,12 +29,27 @@ type Fuzzer struct {
 
 var preExisting bool = false
 
+var invalidFuzzerNames *regexp.Regexp
+
+func init() {
+	invalidFuzzerNames = regexp.MustCompile("[^a-zA-Z0-9_-]")
+}
+
+func usableHostName(orig string) (valid string) {
+	valid = invalidFuzzerNames.ReplaceAllString(orig, "_")
+	if len(valid) > 32 {
+		valid = valid[0:32]
+	}
+	return
+}
+
 func newFuzzer() Fuzzer {
 	name, err := os.Hostname()
 	if err != nil {
 		log.Fatal("Couldn't get hostname", err)
 	}
 
+	name = usableHostName(name)
 	number := types.RandInt() & 0xffff
 
 	return Fuzzer{
