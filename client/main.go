@@ -282,7 +282,8 @@ func (s *Server) UploadState(state types.State) {
 	buffer := bytes.NewReader(data)
 
 	resource := fmt.Sprintf("http://%s/%s", s.hostport, "state")
-	_, err = http.Post(resource, "application/json", buffer)
+	resp, err := http.Post(resource, "application/json", buffer)
+	defer resp.Body.Close()
 
 	if err != nil {
 		log.Panicf("Couldn't upload state", err)
