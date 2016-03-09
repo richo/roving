@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -202,18 +201,14 @@ func (s *Server) FetchTarget() {
 	}
 }
 
-func base64ToPath(content, path string) {
+func WriteToPath(content []byte, path string) {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0755)
 
 	if err != nil {
 		log.Panicf("Couldn't open %s for writing", path, err)
 	}
 
-	body, err := base64.StdEncoding.DecodeString(content)
-	if err != nil {
-		log.Fatalf("Couldn't decode body for %s", path, err)
-	}
-	f.Write([]byte(body))
+	f.Write(content)
 }
 
 func (s *Server) FetchInputs() {
@@ -229,7 +224,7 @@ func (s *Server) FetchInputs() {
 
 	for _, inp := range inps.Inputs {
 		path := fmt.Sprintf("input/%s", inp.Name)
-		base64ToPath(inp.Body, path)
+		WriteToPath(inp.Body, path)
 	}
 }
 
@@ -242,13 +237,8 @@ func (s *Fuzzer) UnpackStates(other []types.State) {
 			log.Fatalf("Couldn't get stdin handle", err)
 		}
 
-		body, err := base64.StdEncoding.DecodeString(state.Queue)
-		if err != nil {
-			log.Fatal("Couldn't decode queue from %s", state.Id, err)
-		}
-
 		go func() {
-			_, err := stdin.Write(body)
+			_, err := stdin.Write(state.Queue)
 			if err != nil {
 				log.Fatal("Error writing data into tar", err)
 			}
