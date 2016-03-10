@@ -120,6 +120,14 @@ func (f *Fuzzer) start() {
 	f.cmd.Process.Signal(syscall.SIGCONT)
 }
 
+/// This function is distinct from "running". We're not testing for the process
+//liveness, but instead asserting that the fuzzer has made it past the corpus
+//test phase and has begun fuzzing.
+func (f *Fuzzer) isFuzzing() bool {
+	_, err := os.Stat(fmt.Sprintf("output/%s/fuzzer_stats", f.Id))
+	return !os.IsNotExist(err)
+}
+
 func (f *Fuzzer) State() types.State {
 	state := types.State{
 		Id:      f.Id,
@@ -145,6 +153,17 @@ func (w *WatchDog) run() {
 	ticker := time.NewTicker(w.Interval)
 
 	for {
+		// Only sleep for a sec before the first sync. We want to upload our first
+		// batch of stats really fast. That said, we do need to wait for the fuzzer
+		// to actually start before we can read stats.
+		time.Sleep(5 * time.Second)
+		if w.Fuzzer.isFuzzing() {
+			w.syncState()
+			break
+		}
+	}
+
+	for {
 		select {
 		case <-ticker.C:
 			w.syncState()
@@ -153,7 +172,7 @@ func (w *WatchDog) run() {
 }
 
 func (w *WatchDog) syncState() {
-	if w.Fuzzer.started {
+	if w.Fuzzer.started && w.Fuzzer.isFuzzing() {
 		w.Fuzzer.stop()
 		defer w.Fuzzer.start()
 		w.uploadState()
