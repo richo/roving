@@ -181,6 +181,7 @@ func (s *Server) fetchToFile(resource, file string) error {
 	}
 
 	io.Copy(f, target.Body)
+	f.Close()
 
 	return nil
 }
