@@ -34,10 +34,6 @@ func (i *Input) WriteToPath(path string) {
 	f.Write(i.Body)
 }
 
-// TODO(richo) flesh this out at some point
-type FuzzerStats struct {
-}
-
 type State struct {
 	Id      string
 	Stats   FuzzerStats
