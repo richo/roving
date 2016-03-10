@@ -26,7 +26,7 @@ directory.
 * Create a `target`
 * Populate a directory called `input` with a corpus
 * `make`
-* `./server/server`
+* `./server/server /path/to/dir/with-target-and-input`
 
 On each of your clients
 * `./client/client name-of.server.com:port`
