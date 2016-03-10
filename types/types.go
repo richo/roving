@@ -2,10 +2,10 @@ package types
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"os"
 	"os/exec"
 )
@@ -95,11 +95,10 @@ func ReadQueue(path string) []byte {
 	return output
 }
 
-func RandInt() int64 {
-	to := big.NewInt(1 << 62)
-	i, err := rand.Int(rand.Reader, to)
+func RandInt() (r uint64) {
+	err := binary.Read(rand.Reader, binary.LittleEndian, &r)
 	if err != nil {
-		log.Fatal("Couldn't get a random number", err)
+		log.Fatalf("binary.Read failed:", err)
 	}
-	return i.Int64()
+	return
 }
