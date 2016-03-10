@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/zenazn/goji/web"
 )
@@ -13,7 +15,12 @@ var webfaceEnabled bool = true
 
 func init() {
 	var err error
-	indexTemplate, err = template.New("index.html").ParseFiles("server/templates/index.html")
+
+	baseDir := filepath.Dir(os.Args[0])
+
+	indexTemplate, err = template.New("index.html").
+		ParseFiles(filepath.Join(baseDir, "templates", "index.html"))
+
 	if err != nil {
 		log.Printf("WARN: Couldn't parse templates, disabling web interface:", err)
 	}
