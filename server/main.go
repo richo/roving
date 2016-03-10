@@ -76,6 +76,16 @@ func setupAndServe() {
 
 func main() {
 	var err error
+	args := os.Args
+	if len(args) != 2 {
+		log.Printf("Usage: ./server <workdir>")
+	}
+
+	err = os.Chdir(args[1])
+	if err != nil {
+		log.Panicf("Couldn't move into work directory", err)
+	}
+
 	binary, err = ioutil.ReadFile("target")
 	if err != nil {
 		log.Panicf("Couldn't load target")
