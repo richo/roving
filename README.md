@@ -19,7 +19,22 @@ Once up, it will create a directory called `output` which should look familiar
 to anyone used to using afl. It will aggregate crashes and hangs in that
 directory.
 
-# Usage
+# Getting Started
+
+First off, roving only gives you a mechanism for orchestrating AFL instances.
+This guide assumes basic familiarity with afl.
+
+Roving also makes a number of assumptions:
+
+* That your target takes no arguments, and accepts it's input to stdin.
+* That it's run on a "trusted" network (If you can access the server port, you
+  can steal all the crashes!)
+
+With that said:
+
+1. First off, build your binary. It needs to be named `target`.
+1. Clone and build AFL.
+1. `export AFL=/path/to/afl-directory`
 
 * export `AFL` with the path to afl, or make sure `afl-fuzz` is on `PATH`
 
