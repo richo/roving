@@ -73,9 +73,15 @@ func (f *Fuzzer) run() error {
 	f.cmd = exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
-		"-S", f.Id,
-		"./target",
-	)
+		"-S", f.Id)
+	mem_limit := os.Getenv("AFL_MEMORY_LIMIT")
+	if mem_limit != "" {
+		f.cmd.Args = append(f.cmd.Args, "-m")
+		f.cmd.Args = append(f.cmd.Args, mem_limit)
+	}
+	f.cmd.Args = append(f.cmd.Args, "--")
+	f.cmd.Args = append(f.cmd.Args, "./target")
+
 	stdout, err := f.cmd.StdoutPipe()
 	if err != nil {
 		log.Fatalf("Couldn't get stdout handle", err)
