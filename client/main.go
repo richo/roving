@@ -65,6 +65,11 @@ type WatchDog struct {
 }
 
 func (f *Fuzzer) run() error {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Couldn't get current directory")
+	}
+	log.Printf("Starting fuzzer in %s", dir)
 	f.cmd = exec.Command(f.path(),
 		"-o", "output",
 		"-i", "input",
