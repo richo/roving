@@ -31,11 +31,11 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Decode(&state)
 
 	for _, hang := range state.Hangs.Inputs {
-		hang.WriteToPath("work-server/hangs")
+		hang.WriteToPath("hangs")
 	}
 
 	for _, crash := range state.Crashes.Inputs {
-		crash.WriteToPath("work-server/crashes")
+		crash.WriteToPath("crashes")
 	}
 
 	nodesLock.Lock()
@@ -101,23 +101,14 @@ func main() {
 		log.Panicf("Couldn't load target")
 	}
 
-	fatal := func() {
-		log.Fatal("Couldn't make server workdir, maybe you already have one?")
+	err = os.Mkdir("hangs", 0755)
+	if err != nil {
+		// fatal()
 	}
 
-	err = os.Mkdir("work-server", 0755)
+	err = os.Mkdir("crashes", 0755)
 	if err != nil {
-		fatal()
-	}
-
-	err = os.Mkdir("work-server/hangs", 0755)
-	if err != nil {
-		fatal()
-	}
-
-	err = os.Mkdir("work-server/crashes", 0755)
-	if err != nil {
-		fatal()
+		// fatal()
 	}
 
 	reaper := newReaper(1 * time.Hour)
