@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"net/http"
 
@@ -40,6 +41,9 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 	nodesLock.Lock()
 	defer nodesLock.Unlock()
 	nodes[state.Id] = state
+	updatesLock.Lock()
+	defer updatesLock.Unlock()
+	updates[state.Id] = time.Now()
 }
 
 func get(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -116,5 +120,7 @@ func main() {
 		fatal()
 	}
 
+	reaper := newReaper(1 * time.Hour)
+	go reaper.run()
 	setupAndServe()
 }
