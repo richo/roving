@@ -112,6 +112,7 @@ func (f *Fuzzer) start() {
 func (f *Fuzzer) State() types.State {
 	state := types.State{
 		Id:      f.Id,
+		Stats:   types.ReadStats(fmt.Sprintf("output/%s/fuzzer_stats", f.Id)),
 		Queue:   types.ReadQueue(fmt.Sprintf("output/%s/queue", f.Id)),
 		Crashes: types.ReadDir(fmt.Sprintf("output/%s/crashes", f.Id)),
 		Hangs:   types.ReadDir(fmt.Sprintf("output/%s/hangs", f.Id)),

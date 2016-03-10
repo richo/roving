@@ -42,6 +42,23 @@ type State struct {
 	Hangs   InputCorpus
 }
 
+func ReadStats(path string) FuzzerStats {
+	// TODO urgh panic
+	var buf []byte
+
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatalf("Couldn't read stats", err)
+	}
+
+	stats, err := ParseStats(string(buf))
+	if err != nil {
+		log.Fatalf("Couldn't read stats", err)
+	}
+
+	return *stats
+}
+
 // Read the contents of a directory out
 func ReadDir(path string) InputCorpus {
 	corpus := InputCorpus{}
