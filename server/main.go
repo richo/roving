@@ -64,6 +64,9 @@ func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func setupAndServe() {
+	// Browser endpoints
+	goji.Get("/", index)
+	// Client endpoints
 	goji.Post("/state", post)
 	goji.Get("/state/:id", get)
 	goji.Get("/target", target)
