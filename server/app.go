@@ -19,6 +19,8 @@ func init() {
 }
 
 func index(c web.C, w http.ResponseWriter, r *http.Request) {
+	nodesLock.RLock()
+	defer nodesLock.RUnlock()
 	err := indexTemplate.Execute(w, nodes)
 	if err != nil {
 		log.Fatalf("Couldn't execute template", err)

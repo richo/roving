@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 
 	"net/http"
 
@@ -20,6 +21,7 @@ import (
 var binary []byte
 
 var nodes = make(map[string]types.State)
+var nodesLock sync.RWMutex
 
 func post(c web.C, w http.ResponseWriter, r *http.Request) {
 	state := types.State{}
@@ -35,10 +37,14 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 		crash.WriteToPath("work-server/crashes")
 	}
 
+	nodesLock.Lock()
+	defer nodesLock.Unlock()
 	nodes[state.Id] = state
 }
 
 func get(c web.C, w http.ResponseWriter, r *http.Request) {
+	nodesLock.RLock()
+	defer nodesLock.RUnlock()
 	var values []types.State
 	for _, v := range nodes {
 		values = append(values, v)
