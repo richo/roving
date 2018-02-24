@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/richo/roving/types"
+	"../types"
 )
 
 type Server struct {
@@ -64,7 +64,7 @@ type WatchDog struct {
 	Server   *Server
 }
 
-func (f *Fuzzer) run() error {
+func (f *Fuzzer) run(mode string) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Couldn't get current directory")
@@ -81,6 +81,10 @@ func (f *Fuzzer) run() error {
 	}
 	f.cmd.Args = append(f.cmd.Args, "--")
 	f.cmd.Args = append(f.cmd.Args, "./target")
+
+	if mode == "1" {
+		f.cmd.Args = append(f.cmd.Args, "@@")
+	}
 
 	stdout, err := f.cmd.StdoutPipe()
 	if err != nil {
@@ -326,8 +330,8 @@ func setupWorkDir() {
 
 func main() {
 	args := os.Args
-	if len(args) != 2 {
-		log.Printf("Usage: ./client server:port")
+	if len(args) != 3{
+		log.Printf("Usage: ./client server:port mode\nmode\n\t0 - stdin\n\t1 - file")
 		return
 	}
 
@@ -359,7 +363,7 @@ func main() {
 
 	go watchdog.run()
 
-	err := fuzzer.run()
+	err := fuzzer.run(args[2])
 
 	watchdog.uploadState()
 

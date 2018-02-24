@@ -13,7 +13,7 @@ import (
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 
-	"github.com/richo/roving/types"
+	"../types"
 )
 
 // For now, the server stores a great deal of state in memory, although it will
