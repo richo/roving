@@ -10,20 +10,79 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/richo/roving/types"
 )
 
-type Server struct {
+type RovingServer struct {
 	hostport string
 }
 
+type FuzzCommand interface {
+	cmd() *exec.Cmd
+}
+
 type Fuzzer struct {
-	cmd     *exec.Cmd
-	Id      string
-	started bool
+	Id          string
+	started     bool
+	fuzzCommand FuzzCommand
+}
+
+type AFLFuzzCommand struct {
+	fuzzerId string
+	memLimit string
+}
+
+func (f Fuzzer) run() error {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Couldn't get current directory")
+	}
+	log.Printf("Starting fuzzer in %s", dir)
+
+	cmd := f.fuzzCommand.cmd()
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatalf("Couldn't get stdout handle: %s", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatalf("Couldn't get stderr handle: %s", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Couldn't start fuzzer: %s", err)
+	}
+
+	go func() {
+		io.Copy(os.Stdout, stdout)
+	}()
+
+	go func() {
+		io.Copy(os.Stderr, stderr)
+	}()
+
+	log.Printf("Waiting for fuzzer to exit")
+	f.started = true
+	return cmd.Wait()
+}
+
+func (f AFLFuzzCommand) cmd() *exec.Cmd {
+	c := exec.Command(aflPath(),
+		"-o", "output",
+		"-i", "input",
+		"-S", f.fuzzerId)
+
+	if f.memLimit != "" {
+		c.Args = append(c.Args, "-m")
+		c.Args = append(c.Args, f.memLimit)
+	}
+	return c
 }
 
 var preExisting bool = false
@@ -43,7 +102,7 @@ func usableHostName(orig string) (valid string) {
 	return
 }
 
-func newFuzzer() Fuzzer {
+func newAFLFuzzer() Fuzzer {
 	name, err := os.Hostname()
 	if err != nil {
 		log.Fatal("Couldn't get hostname", err)
@@ -51,73 +110,36 @@ func newFuzzer() Fuzzer {
 
 	name = usableHostName(name)
 	number := types.RandInt() & 0xffff
+	id := fmt.Sprintf("%s-%x", name, number)
+
+	memLimit := os.Getenv("AFL_MEMORY_LIMIT")
+
+	fuzzCommand := AFLFuzzCommand{
+		fuzzerId: id,
+		memLimit: memLimit,
+	}
 
 	return Fuzzer{
-		Id:      fmt.Sprintf("%s-%x", name, number),
-		started: false,
+		Id:          id,
+		started:     false,
+		fuzzCommand: fuzzCommand,
 	}
 }
 
 type WatchDog struct {
 	Interval time.Duration
 	Fuzzer   *Fuzzer
-	Server   *Server
-}
-
-func (f *Fuzzer) run() error {
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Couldn't get current directory")
-	}
-	log.Printf("Starting fuzzer in %s", dir)
-	f.cmd = exec.Command(f.path(),
-		"-o", "output",
-		"-i", "input",
-		"-S", f.Id)
-	mem_limit := os.Getenv("AFL_MEMORY_LIMIT")
-	if mem_limit != "" {
-		f.cmd.Args = append(f.cmd.Args, "-m")
-		f.cmd.Args = append(f.cmd.Args, mem_limit)
-	}
-	f.cmd.Args = append(f.cmd.Args, "--")
-	f.cmd.Args = append(f.cmd.Args, "./target")
-
-	stdout, err := f.cmd.StdoutPipe()
-	if err != nil {
-		log.Fatalf("Couldn't get stdout handle", err)
-	}
-
-	stderr, err := f.cmd.StderrPipe()
-	if err != nil {
-		log.Fatalf("Couldn't get stderr handle", err)
-	}
-
-	if err := f.cmd.Start(); err != nil {
-		log.Fatalf("Couldn't start fuzzer", err)
-	}
-
-	go func() {
-		io.Copy(os.Stdout, stdout)
-	}()
-
-	go func() {
-		io.Copy(os.Stderr, stderr)
-	}()
-
-	log.Printf("Waiting for fuzzer to exit")
-	f.started = true
-
-	return f.cmd.Wait()
+	Server   *RovingServer
 }
 
 func (f *Fuzzer) stop() {
 	log.Printf("Stopping the fuzzer")
-	f.cmd.Process.Signal(syscall.SIGSTOP)
+	f.fuzzCommand.cmd().Process.Signal(syscall.SIGSTOP)
 }
 
 func (f *Fuzzer) start() {
 	log.Printf("Starting the fuzzer")
-	f.cmd.Process.Signal(syscall.SIGCONT)
+	f.fuzzCommand.cmd().Process.Signal(syscall.SIGCONT)
 }
 
 /// This function is distinct from "running". We're not testing for the process
@@ -140,7 +162,7 @@ func (f *Fuzzer) State() types.State {
 	return state
 }
 
-func (f *Fuzzer) path() string {
+func aflPath() string {
 	root := os.Getenv("AFL")
 	if root == "" { // Not found, hopefully it's in PATH
 		return "afl-fuzz"
@@ -195,7 +217,7 @@ func (w *WatchDog) downloadState() {
 	w.Fuzzer.UnpackStates(other)
 }
 
-func (s *Server) fetchToFile(resource, file string) error {
+func (s *RovingServer) fetchToFile(resource, file string) error {
 	target := s.getPath(resource)
 	defer target.Body.Close()
 
@@ -211,19 +233,19 @@ func (s *Server) fetchToFile(resource, file string) error {
 	return nil
 }
 
-func (s *Server) getPath(path string) *http.Response {
-	resource := fmt.Sprintf("http://%s/%s", s.hostport, path)
+func (s *RovingServer) getPath(path string) *http.Response {
+	resource := fmt.Sprintf("%s/%s", s.hostport, path)
 	log.Printf("Fetching %s", resource)
 
 	resp, err := http.Get(resource)
 	if err != nil {
-		log.Panicf("Couldn't fetch target", err)
+		log.Panicf("Couldn't fetch target: %s", err)
 	}
 
 	return resp
 }
 
-func (s *Server) FetchTarget() {
+func (s *RovingServer) FetchTarget() {
 	if err := s.fetchToFile("target", "target"); err != nil {
 		if preExisting {
 			log.Printf("Couldn't write target, ignoring since this tree is preexisting")
@@ -237,13 +259,13 @@ func WriteToPath(content []byte, path string) {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0755)
 
 	if err != nil {
-		log.Panicf("Couldn't open %s for writing", path, err)
+		log.Panicf("Couldn't open %s for writing: %s", path, err)
 	}
 
 	f.Write(content)
 }
 
-func (s *Server) FetchInputs() {
+func (s *RovingServer) FetchInputs() {
 	os.Mkdir("input", 0755)
 
 	inputs := s.getPath("inputs")
@@ -266,7 +288,7 @@ func (s *Fuzzer) UnpackStates(other []types.State) {
 
 		stdin, err := cmd.StdinPipe()
 		if err != nil {
-			log.Fatalf("Couldn't get stdin handle", err)
+			log.Fatalf("Couldn't get stdin handle: %s", err)
 		}
 
 		go func() {
@@ -285,7 +307,7 @@ func (s *Fuzzer) UnpackStates(other []types.State) {
 	}
 }
 
-func (s *Server) FetchState(id string) []types.State {
+func (s *RovingServer) FetchState(id string) []types.State {
 	var state []types.State
 	resp := s.getPath(fmt.Sprintf("state/%s", id))
 
@@ -295,7 +317,7 @@ func (s *Server) FetchState(id string) []types.State {
 	return state
 }
 
-func (s *Server) UploadState(state types.State) {
+func (s *RovingServer) UploadState(state types.State) {
 	data, err := json.Marshal(state)
 	if err != nil {
 		log.Fatal("Couldn't marshall state", err)
@@ -303,24 +325,26 @@ func (s *Server) UploadState(state types.State) {
 
 	buffer := bytes.NewReader(data)
 
-	resource := fmt.Sprintf("http://%s/%s", s.hostport, "state")
+	resource := fmt.Sprintf("%s/%s", s.hostport, "state")
 	resp, err := http.Post(resource, "application/json", buffer)
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Panicf("Couldn't upload state", err)
+		log.Panicf("Couldn't upload state: %s", err)
 	}
 }
 
 func setupWorkDir() {
 	var err error
 	// TODO(richo) Ephemeral workdirs for concurrency
-	if err = os.Mkdir("work", 0755); err != nil {
+	if err = os.Mkdir("work", 0755); err == nil {
+		log.Println("Created new working directory")
+	} else {
 		log.Println("Workdir already exists, assuming we're joining an existing run")
 		preExisting = true
 	}
 	if err = os.Chdir("work"); err != nil {
-		log.Panicf("Couldn't change to workdir", err)
+		log.Panicf("Couldn't change to workdir: %s", err)
 	}
 }
 
@@ -331,13 +355,23 @@ func main() {
 		return
 	}
 
+	serverHostPort := args[1]
+	httpPrefix := "http://"
+	if !strings.HasPrefix(serverHostPort, httpPrefix) {
+		serverHostPort = httpPrefix + serverHostPort
+	}
+	log.Printf("Server has address " + serverHostPort)
+
+	fuzzer := newAFLFuzzer()
+	Start(fuzzer, serverHostPort)
+}
+
+func Start(fuzzer Fuzzer, serverHostPort string) {
 	setupWorkDir()
 
-	server := Server{args[1]}
+	server := RovingServer{serverHostPort}
 	server.FetchTarget()
 	server.FetchInputs()
-
-	fuzzer := newFuzzer()
 
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
