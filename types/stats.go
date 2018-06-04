@@ -153,10 +153,10 @@ func ParseStats(stats string) (*FuzzerStats, error) {
 		case "command_line":
 			command_line = value
 			fields_covered |= 1 << 24
-	// since latest version of afl add some new keywords such as 'stability'.
-	// patch out this two line can keep roving compatibled the latest vesion of afl.
-	//	default:
-	//		return nil, fmt.Errorf("Unexpected key: %s", key)
+			// since latest version of afl add some new keywords such as 'stability'.
+			// patch out this two line can keep roving compatibled the latest vesion of afl.
+			//	default:
+			//		return nil, fmt.Errorf("Unexpected key: %s", key)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("Invalid value for %s: %s", key, value)

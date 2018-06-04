@@ -61,7 +61,7 @@ func ReadStats(path string) FuzzerStats {
 
 // Read the contents of a directory out
 func ReadDir(path string) InputCorpus {
-	corpus := InputCorpus{}
+	corpus := InputCorpus{[]Input{}}
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatalf("Couldn't open %s", path, err)
