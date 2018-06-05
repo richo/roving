@@ -19,12 +19,16 @@ import (
 // For now, the server stores a great deal of state in memory, although it will
 // write as much as it can out to directories that will look reasonable to afl.
 
-var binary []byte
+var targetBinary []byte
 
+// `nodes` is a map from hostname => the State of that host
 var nodes = make(map[string]types.State)
 var nodesLock sync.RWMutex
 
-func post(c web.C, w http.ResponseWriter, r *http.Request) {
+// Clients use this route to periodically report their states. The server uses
+// this information to update its `nodes` map. It also writes hangs and crashes
+// to the ./hangs and ./crashes directories.
+func postState(c web.C, w http.ResponseWriter, r *http.Request) {
 	state := types.State{}
 
 	encoder := json.NewDecoder(r.Body)
@@ -41,12 +45,14 @@ func post(c web.C, w http.ResponseWriter, r *http.Request) {
 	nodesLock.Lock()
 	defer nodesLock.Unlock()
 	nodes[state.Id] = state
+
 	updatesLock.Lock()
 	defer updatesLock.Unlock()
 	updates[state.Id] = time.Now()
 }
 
-func get(c web.C, w http.ResponseWriter, r *http.Request) {
+// Returns the server's `nodes` map as JSON.
+func getState(c web.C, w http.ResponseWriter, r *http.Request) {
 	nodesLock.RLock()
 	defer nodesLock.RUnlock()
 	var values []types.State
@@ -59,12 +65,15 @@ func get(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(values)
 }
 
-func target(c web.C, w http.ResponseWriter, r *http.Request) {
+// Returns the target binary for clients to download before they begin
+// fuzzing.
+func getTarget(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(binary)
+	w.Write(targetBinary)
 }
 
-func inputs(c web.C, w http.ResponseWriter, r *http.Request) {
+// Returns the initialization corpus to bootstrap the fuzzing process.
+func getInputs(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	corpus := types.ReadDir("input")
@@ -77,10 +86,10 @@ func setupAndServe() {
 	// Browser endpoints
 	goji.Get("/", index)
 	// Client endpoints
-	goji.Post("/state", post)
-	goji.Get("/state/:id", get)
-	goji.Get("/target", target)
-	goji.Get("/inputs", inputs)
+	goji.Post("/state", postState)
+	goji.Get("/state/:id", getState)
+	goji.Get("/target", getTarget)
+	goji.Get("/inputs", getInputs)
 	goji.Serve()
 }
 
@@ -96,7 +105,7 @@ func main() {
 		log.Panicf("Couldn't move into work directory", err)
 	}
 
-	binary, err = ioutil.ReadFile("target")
+	targetBinary, err = ioutil.ReadFile("target")
 	if err != nil {
 		log.Panicf("Couldn't load target")
 	}

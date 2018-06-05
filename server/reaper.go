@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// A Reaper removes old nodes from `nodes` and `updates` maps after
+// a prolonged period of inactivity.
+
 var updates = make(map[string]time.Time)
 var updatesLock sync.RWMutex
 
@@ -19,6 +22,8 @@ func newReaper(i time.Duration) *Reaper {
 	}
 }
 
+// Removes nodes that have been inactive for longer than `Interval`
+// from the `nodes` map.
 func (r *Reaper) cleanUpOldNodes() {
 	updatesLock.RLock()
 	defer updatesLock.RUnlock()
@@ -29,6 +34,7 @@ func (r *Reaper) cleanUpOldNodes() {
 	for id, _ := range nodes {
 		if updates[id].Add(r.Interval).Before(now) {
 			delete(nodes, id)
+      delete(updates, id)
 		}
 	}
 }
