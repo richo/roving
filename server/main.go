@@ -19,15 +19,73 @@ import (
 // For now, the server stores a great deal of state in memory, although it will
 // write as much as it can out to directories that will look reasonable to afl.
 
+var nodes Nodes
+
+// Nodes is a struct that gets and sets the states of Roving nodes.
+// Reaper to cull inactive nodes.
+type Nodes struct {
+	states  map[string]types.State
+	updates map[string]time.Time
+
+	statesLock  sync.RWMutex
+	updatesLock sync.RWMutex
+}
+
+// Sets the state for node `nodeId` to `state`, taking out the appropriate
+// locks.
+func (n Nodes) setState(nodeId string, state types.State) {
+	n.statesLock.Lock()
+	defer n.statesLock.Unlock()
+	n.states[state.Id] = state
+
+	n.updatesLock.Lock()
+	defer n.updatesLock.Unlock()
+	n.updates[state.Id] = time.Now()
+}
+
+// Returns an array of all states that the `Nodes` knows about.
+func (n Nodes) getStates() []types.State {
+	n.statesLock.RLock()
+	defer n.statesLock.RUnlock()
+
+	var values []types.State
+	for _, v := range n.states {
+		values = append(values, v)
+	}
+	return values
+}
+
+// Deletes `nodeId` from the `Nodes`.
+func (n Nodes) deleteNode(nodeId string) {
+	n.statesLock.Lock()
+	defer n.statesLock.Unlock()
+	n.updatesLock.RLock()
+	defer n.updatesLock.RUnlock()
+
+	delete(n.states, nodeId)
+	delete(n.updates, nodeId)
+}
+
+func newNodes() Nodes {
+	var states = make(map[string]types.State)
+	var updates = make(map[string]time.Time)
+
+	var statesLock sync.RWMutex
+	var updatesLock sync.RWMutex
+
+	return Nodes{
+		states:      states,
+		updates:     updates,
+		statesLock:  statesLock,
+		updatesLock: updatesLock,
+	}
+}
+
 var targetBinary []byte
 
-// `nodes` is a map from hostname => the State of that host
-var nodes = make(map[string]types.State)
-var nodesLock sync.RWMutex
-
 // Clients use this route to periodically report their states. The server uses
-// this information to update its `nodes` map. It also writes hangs and crashes
-// to the ./hangs and ./crashes directories.
+// this information to update its `Nodes` information. It also writes hangs and
+// crashes to the ./hangs and ./crashes directories.
 func postState(c web.C, w http.ResponseWriter, r *http.Request) {
 	state := types.State{}
 
@@ -42,27 +100,16 @@ func postState(c web.C, w http.ResponseWriter, r *http.Request) {
 		crash.WriteToPath("crashes")
 	}
 
-	nodesLock.Lock()
-	defer nodesLock.Unlock()
-	nodes[state.Id] = state
-
-	updatesLock.Lock()
-	defer updatesLock.Unlock()
-	updates[state.Id] = time.Now()
+	nodes.setState(state.Id, state)
 }
 
-// Returns the server's `nodes` map as JSON.
+// Returns all node states as JSON.
 func getState(c web.C, w http.ResponseWriter, r *http.Request) {
-	nodesLock.RLock()
-	defer nodesLock.RUnlock()
-	var values []types.State
-	for _, v := range nodes {
-		values = append(values, v)
-	}
+	states := nodes.getStates()
 	w.Header().Set("Content-Type", "application/json")
 
 	encoder := json.NewEncoder(w)
-	encoder.Encode(values)
+	encoder.Encode(states)
 }
 
 // Returns the target binary for clients to download before they begin
@@ -98,6 +145,7 @@ func main() {
 	args := os.Args
 	if len(args) != 2 {
 		log.Printf("Usage: ./server <workdir>")
+		return
 	}
 
 	err = os.Chdir(args[1])
@@ -120,7 +168,10 @@ func main() {
 		// fatal()
 	}
 
-	reaper := newReaper(1 * time.Hour)
+	nodes = newNodes()
+
+	reaper := newReaper(nodes, 1*time.Hour)
 	go reaper.run()
+
 	setupAndServe()
 }
