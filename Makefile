@@ -1,5 +1,3 @@
-export AFL ?= $(HOME)/.afls/afl-1.83b
-
 all: server/server client/client
 
 server/server: $(wildcard server/*.go) $(wildcard types/*.go)
@@ -8,18 +6,21 @@ server/server: $(wildcard server/*.go) $(wildcard types/*.go)
 client/client: $(wildcard client/*.go) $(wildcard types/*.go)
 	cd client && go build
 
-serve: server/server
-	rm -rf work-server
-	$(CURDIR)/server/server
+example-target: check-env
+	AFL_HARDEN=1 $(AFL)/afl-clang -o example/server/$@ example/server/target.c
 
-target: example/target.c
-	AFL_HARDEN=1 $(AFL)/afl-clang -o $@ $<
+example-server: server/server
+	$(CURDIR)/server/server $(CURDIR)/example/server
 
-run: client/client
-	rm -rf work
-	$(CURDIR)/client/client localhost:8000
+example-client: client/client
+	cd $(CURDIR)/example/client && rm -rf work && ../../client/client localhost:8000
 
 # Debug pretty printer
 print-%: ; @echo $*=$($*)
+
+check-env:
+ifndef AFL
+	$(error please set the AFL env var to the path to your afl repo)
+endif
 
 .PHONY: all serve testing

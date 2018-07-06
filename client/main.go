@@ -76,7 +76,8 @@ func (f AFLFuzzCommand) cmd() *exec.Cmd {
 	c := exec.Command(aflPath(),
 		"-o", "output",
 		"-i", "input",
-		"-S", f.fuzzerId)
+		"-S",
+		"--", "./target")
 
 	if f.memLimit != "" {
 		c.Args = append(c.Args, "-m")

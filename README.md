@@ -38,6 +38,16 @@ In theory that's it!
 
 This is super lightly tested, YMMV, patches/bug reports accepted, etc.
 
+# Running the example
+
+The example code lives in the `example/` directory, and can be run by running:
+
+* `make example-target` to compile the example target
+* `make example-server` to run the example server on the default port 8000
+* `make example-client` to run the example client
+
+Your client should find a crash within 30 seconds.
+
 # Why Roving?
 
 I asked some of my coworkers what they'd name a distributed fuzzy thing.
