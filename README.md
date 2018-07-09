@@ -40,7 +40,7 @@ This is super lightly tested, YMMV, patches/bug reports accepted, etc.
 
 # Running the examples
 
-The example code lives in the `example/` directory.
+The example code lives in the `examples/` directory.
 
 ## C
 
@@ -52,7 +52,7 @@ Your client should find a crash within 30 seconds.
 
 ## Ruby
 
-* `bundle install --gemfile example/client/ruby/Gemfile` to install the `afl` gem
+* `bundle install --gemfile examples/client/ruby/Gemfile` to install the `afl` gem
 * `make example-server-ruby` to run the example server serving the Ruby example target on the default port 8000
 * `make example-client` to run the example client
 
