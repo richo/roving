@@ -13,7 +13,7 @@ example-server: server/server
 	$(CURDIR)/server/server $(CURDIR)/example/server
 
 example-client: client/client
-	cd $(CURDIR)/example/client && rm -rf work && ../../client/client localhost:8000
+	cd $(CURDIR)/example/client && rm -rf work && ../../client/client 127.0.0.1:8000
 
 # Debug pretty printer
 print-%: ; @echo $*=$($*)

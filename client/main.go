@@ -32,8 +32,9 @@ type Fuzzer struct {
 }
 
 type AFLFuzzCommand struct {
-	fuzzerId string
-	memLimit string
+	fuzzerId      string
+	memLimit      string
+	targetCommand []string
 }
 
 func (f Fuzzer) run() error {
@@ -44,7 +45,6 @@ func (f Fuzzer) run() error {
 	log.Printf("Starting fuzzer in %s", dir)
 
 	cmd := f.fuzzCommand.cmd()
-
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatalf("Couldn't get stdout handle: %s", err)
@@ -73,11 +73,10 @@ func (f Fuzzer) run() error {
 }
 
 func (f AFLFuzzCommand) cmd() *exec.Cmd {
-	c := exec.Command(aflPath(),
+	fullCommandArgs := append([]string{
 		"-o", "output",
-		"-i", "input",
-		"-S",
-		"--", "./target")
+		"-i", "input"}, f.targetCommand...)
+	c := exec.Command(aflPath(), fullCommandArgs...)
 
 	if f.memLimit != "" {
 		c.Args = append(c.Args, "-m")
@@ -103,7 +102,7 @@ func usableHostName(orig string) (valid string) {
 	return
 }
 
-func newAFLFuzzer() Fuzzer {
+func newAFLFuzzer(targetCommand []string) Fuzzer {
 	name, err := os.Hostname()
 	if err != nil {
 		log.Fatal("Couldn't get hostname", err)
@@ -116,8 +115,9 @@ func newAFLFuzzer() Fuzzer {
 	memLimit := os.Getenv("AFL_MEMORY_LIMIT")
 
 	fuzzCommand := AFLFuzzCommand{
-		fuzzerId: id,
-		memLimit: memLimit,
+		fuzzerId:      id,
+		memLimit:      memLimit,
+		targetCommand: targetCommand,
 	}
 
 	return Fuzzer{
@@ -246,8 +246,24 @@ func (s *RovingServer) getPath(path string) *http.Response {
 	return resp
 }
 
-func (s *RovingServer) FetchTarget() {
-	if err := s.fetchToFile("target", "target"); err != nil {
+// Fetch the target's metadata, including whether we need
+// to download the target and what command we should use
+// to run it.
+func (s *RovingServer) FetchTargetMeta() types.TargetMetadata {
+	res := s.getPath("target/meta")
+	defer res.Body.Close()
+
+	targetMeta := &types.TargetMetadata{}
+
+	encoder := json.NewDecoder(res.Body)
+	encoder.Decode(targetMeta)
+
+	return *targetMeta
+}
+
+// Fetch the target binary (if necessary)
+func (s *RovingServer) FetchTargetBinary(file string) {
+	if err := s.fetchToFile("target/binary", file); err != nil {
 		if preExisting {
 			log.Printf("Couldn't write target, ignoring since this tree is preexisting")
 		} else {
@@ -363,16 +379,33 @@ func main() {
 	}
 	log.Printf("Server has address " + serverHostPort)
 
-	fuzzer := newAFLFuzzer()
-	Start(fuzzer, serverHostPort)
+	Start(serverHostPort)
 }
 
-func Start(fuzzer Fuzzer, serverHostPort string) {
+func Start(serverHostPort string) {
 	setupWorkDir()
 
 	server := RovingServer{serverHostPort}
-	server.FetchTarget()
+
+	var targetCommand []string
+	targetMeta := server.FetchTargetMeta()
+	if targetMeta.ShouldDownload {
+		log.Printf("Downloading binary from server")
+
+		targetBinaryFilename := "../target"
+		server.FetchTargetBinary(targetBinaryFilename)
+
+		targetCommand = []string{targetBinaryFilename}
+	} else {
+		log.Printf("Not downloading binary from server")
+
+		targetCommand = targetMeta.Command
+	}
+	log.Printf("TargetCommand:\t%s", targetCommand)
+
 	server.FetchInputs()
+
+	fuzzer := newAFLFuzzer(targetCommand)
 
 	log.Printf("Brought up a fuzzer with id %s", fuzzer.Id)
 
