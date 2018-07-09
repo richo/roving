@@ -9,8 +9,11 @@ client/client: $(wildcard client/*.go) $(wildcard types/*.go)
 example-target: check-env
 	AFL_HARDEN=1 $(AFL)/afl-clang -o example/server/$@ example/server/target.c
 
-example-server: server/server
+example-server-c: server/server
 	$(CURDIR)/server/server $(CURDIR)/example/server
+
+example-server-ruby: server/server
+	$(CURDIR)/server/server $(CURDIR)/example/server ~/.rbenv/versions/2.4.1/bin/ruby $(CURDIR)/example/client/ruby/harness.rb
 
 example-client: client/client
 	cd $(CURDIR)/example/client && rm -rf work && ../../client/client 127.0.0.1:8000
