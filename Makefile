@@ -26,4 +26,4 @@ ifndef AFL
 	$(error please set the AFL env var to the path to your afl repo)
 endif
 
-.PHONY: all serve testing
+.PHONY: all serve testing example-server-c example-server-ruby example-client
