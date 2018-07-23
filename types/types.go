@@ -42,6 +42,16 @@ type State struct {
 	Hangs   InputCorpus
 }
 
+type Target struct {
+	Metadata TargetMetadata
+	Binary   []byte
+}
+
+type TargetMetadata struct {
+	ShouldDownload bool
+	Command        []string
+}
+
 func ReadStats(path string) FuzzerStats {
 	// TODO urgh panic
 	var buf []byte

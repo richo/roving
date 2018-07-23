@@ -1,5 +1,3 @@
-export AFL ?= $(HOME)/.afls/afl-1.83b
-
 all: server/server client/client
 
 server/server: $(wildcard server/*.go) $(wildcard types/*.go)
@@ -8,18 +6,24 @@ server/server: $(wildcard server/*.go) $(wildcard types/*.go)
 client/client: $(wildcard client/*.go) $(wildcard types/*.go)
 	cd client && go build
 
-serve: server/server
-	rm -rf work-server
-	$(CURDIR)/server/server
+example-target: check-env
+	AFL_HARDEN=1 $(AFL)/afl-clang -o examples/server/$@ examples/server/target.c
 
-target: example/target.c
-	AFL_HARDEN=1 $(AFL)/afl-clang -o $@ $<
+example-server-c: server/server
+	$(CURDIR)/server/server $(CURDIR)/examples/server
 
-run: client/client
-	rm -rf work
-	$(CURDIR)/client/client localhost:8000
+example-server-ruby: server/server
+	$(CURDIR)/server/server $(CURDIR)/examples/server ~/.rbenv/versions/2.4.1/bin/ruby $(CURDIR)/examples/client/ruby/harness.rb
+
+example-client: client/client
+	cd $(CURDIR)/examples/client && rm -rf work && ../../client/client 127.0.0.1:8000
 
 # Debug pretty printer
 print-%: ; @echo $*=$($*)
 
-.PHONY: all serve testing
+check-env:
+ifndef AFL
+	$(error please set the AFL env var to the path to your afl repo)
+endif
+
+.PHONY: all serve testing example-server-c example-server-ruby example-client

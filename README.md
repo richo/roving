@@ -38,6 +38,26 @@ In theory that's it!
 
 This is super lightly tested, YMMV, patches/bug reports accepted, etc.
 
+# Running the examples
+
+The example code lives in the `examples/` directory.
+
+## C
+
+* `make example-target` to compile the example target
+* `make example-server-c` to run the example server serving the C example target on the default port 8000
+* `make example-client` to run the example client
+
+Your client should find a crash within 30 seconds.
+
+## Ruby
+
+* `bundle install --gemfile examples/client/ruby/Gemfile` to install the `afl` gem
+* `make example-server-ruby` to run the example server serving the Ruby example target on the default port 8000
+* `make example-client` to run the example client
+
+Your client should again find a crash within 30 seconds.
+
 # Why Roving?
 
 I asked some of my coworkers what they'd name a distributed fuzzy thing.
