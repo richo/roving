@@ -1,3 +1,11 @@
 client/client
 server/server
-target
+examples/server/target
+examples/client/target
+
+examples/server/crashes/*
+examples/server/hangs/*
+examples/client/work/*
+examples/server/crashes
+examples/server/hangs
+examples/client/work

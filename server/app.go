@@ -31,8 +31,8 @@ func index(c web.C, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Couldn't initialize templates. Web interface disabled"))
 		return
 	}
-	nodesLock.RLock()
-	defer nodesLock.RUnlock()
+	nodes.statesLock.RLock()
+	defer nodes.statesLock.RUnlock()
 	err := indexTemplate.Execute(w, nodes)
 	if err != nil {
 		log.Fatalf("Couldn't execute template", err)
