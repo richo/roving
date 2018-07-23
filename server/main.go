@@ -81,7 +81,7 @@ func newNodes() Nodes {
 	}
 }
 
-var targetBinary []byte
+var target types.Target
 
 // Clients use this route to periodically report their states. The server uses
 // this information to update its `Nodes` information. It also writes hangs and
@@ -112,11 +112,24 @@ func getState(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(states)
 }
 
+// Returns info about the target.
+//
+// If a target is particularly large and will therefore take a long time
+// to download, we want to allow clients to supply their own copy of it.
+// In this case this endpoint will return the command that they should
+// run in order to fuzz it.
+func getTargetMeta(c web.C, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(target.Metadata)
+}
+
 // Returns the target binary for clients to download before they begin
 // fuzzing.
-func getTarget(c web.C, w http.ResponseWriter, r *http.Request) {
+func getTargetBinary(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(targetBinary)
+	w.Write(target.Binary)
 }
 
 // Returns the initialization corpus to bootstrap the fuzzing process.
@@ -135,7 +148,8 @@ func setupAndServe() {
 	// Client endpoints
 	goji.Post("/state", postState)
 	goji.Get("/state/:id", getState)
-	goji.Get("/target", getTarget)
+	goji.Get("/target/meta", getTargetMeta)
+	goji.Get("/target/binary", getTargetBinary)
 	goji.Get("/inputs", getInputs)
 	goji.Serve()
 }
@@ -143,8 +157,8 @@ func setupAndServe() {
 func main() {
 	var err error
 	args := os.Args
-	if len(args) != 2 {
-		log.Printf("Usage: ./server <workdir>")
+	if len(args) < 2 {
+		log.Printf("Usage: ./server <workdir> [<target-command>]")
 		return
 	}
 
@@ -153,10 +167,38 @@ func main() {
 		log.Panicf("Couldn't move into work directory", err)
 	}
 
-	targetBinary, err = ioutil.ReadFile("target")
-	if err != nil {
-		log.Panicf("Couldn't load target")
+	log.Printf("----TARGET DETAILS-----")
+	if len(args) > 2 {
+		targetCommand := args[2:]
+
+		targetMeta := types.TargetMetadata{
+			ShouldDownload: false,
+			Command:        targetCommand,
+		}
+		target = types.Target{
+			Metadata: targetMeta,
+		}
+
+		log.Printf("ShouldDownload:\tfalse (clients should have their own copy of the target available)")
+		log.Printf("Command:\t%s", target.Metadata.Command)
+	} else {
+		targetBinary, err := ioutil.ReadFile("target")
+		if err != nil {
+			log.Panicf("Couldn't load target binary")
+		}
+
+		targetMeta := types.TargetMetadata{
+			ShouldDownload: true,
+		}
+		target = types.Target{
+			Metadata: targetMeta,
+			Binary:   targetBinary,
+		}
+
+		log.Printf("ShouldDownload:\ttrue (clients should download a copy of the target from the server)")
+		log.Printf("binarySize:\t\t%d bytes", len(target.Binary))
 	}
+	log.Printf("--------")
 
 	err = os.Mkdir("hangs", 0755)
 	if err != nil {
