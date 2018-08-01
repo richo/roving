@@ -38,11 +38,25 @@ In theory that's it!
 
 This is super lightly tested, YMMV, patches/bug reports accepted, etc.
 
-# Running the examples
+# Development
+
+## Dependencies
+
+Roving vendors its dependencies and uses [`dep`](https://golang.github.io/dep/) to manage the `vendor/` directory.
+
+To add a new dependency, install `dep` and use the `dep ensure` command. For example:
+
+```
+dep ensure -add github.com/pkg/errors
+```
+
+More details can be found [in the dep documentation](https://golang.github.io/dep/docs/daily-dep.html#adding-a-new-dependency).
+
+## Running the examples
 
 The example code lives in the `examples/` directory.
 
-## C
+### C
 
 * `make example-target` to compile the example target
 * `make example-server-c` to run the example server serving the C example target on the default port 8000
@@ -50,7 +64,7 @@ The example code lives in the `examples/` directory.
 
 Your client should find a crash within 30 seconds.
 
-## Ruby
+### Ruby
 
 * `bundle install --gemfile examples/client/ruby/Gemfile` to install the `afl` gem
 * `make example-server-ruby` to run the example server serving the Ruby example target on the default port 8000
