@@ -1,4 +1,8 @@
-$: << "../lib"
+require 'rubygems'
+require 'bundler/setup'
+
+require 'afl'
+
 def byte
   $stdin.read(1)
 end
@@ -18,8 +22,6 @@ end
 def h
   raise "Crashed"
 end
-
-require 'afl'
 
 unless ENV['NO_AFL']
   AFL.init
