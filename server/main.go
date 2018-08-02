@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -142,7 +144,7 @@ func getInputs(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(corpus)
 }
 
-func setupAndServe() {
+func setupAndServe(port int) {
 	// Browser endpoints
 	goji.Get("/", index)
 	// Client endpoints
@@ -151,6 +153,8 @@ func setupAndServe() {
 	goji.Get("/target/meta", getTargetMeta)
 	goji.Get("/target/binary", getTargetBinary)
 	goji.Get("/inputs", getInputs)
+
+	flag.Set("bind", fmt.Sprintf(":%d", port))
 	goji.Serve()
 }
 
@@ -215,5 +219,7 @@ func main() {
 	reaper := newReaper(nodes, 1*time.Hour)
 	go reaper.run()
 
-	setupAndServe()
+	port := 1234
+
+	setupAndServe(port)
 }

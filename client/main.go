@@ -74,6 +74,12 @@ func (f Fuzzer) run() error {
 
 func (f AFLFuzzCommand) cmd() *exec.Cmd {
 	fullCommandArgs := append([]string{
+		// Memory and timeout limits need to be really high in order to
+		// cope with slow slow Ruby targets.
+		//
+		// TODO(rob): make these configurable
+		"-m", "100000",
+		"-t", "100000",
 		"-o", "output",
 		"-i", "input"}, f.targetCommand...)
 	c := exec.Command(aflPath(), fullCommandArgs...)
