@@ -95,9 +95,14 @@ func init() {
 
 func usableHostName(orig string) (valid string) {
 	valid = invalidFuzzerNames.ReplaceAllString(orig, "_")
-	// fuzzer name is ${hostname}-xxxx, so this string can be max 29 chars
-	if len(valid) > 29 {
-		valid = valid[0:29]
+	// Max AFL fuzzer ID length is 32:
+	// https://github.com/mirrorer/afl/blob/2fb5a3482ec27b593c57258baae7089ebdc89043/afl-fuzz.c#L7456
+	//
+	// Our fuzzer ID is ${hostname}-xxxx, so the hostname portion can
+	// be max 32 - 5 = 27 chars.
+	maxHostnameLen := 27
+	if len(valid) > maxHostnameLen {
+		valid = valid[0:maxHostnameLen]
 	}
 	return
 }
