@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "client.go",
+        "fuzzer.go",
+        "queue_downloader.go",
+        "server_client.go",
+        "state_uploader.go",
+    ],
+    importpath = "github.com/richo/roving/client",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//types:go_default_library",
+        "@com_github_stripe_veneur//ssf:go_default_library",
+        "@com_github_stripe_veneur//trace:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["server_client_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//types:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@io_goji//:go_default_library",
+        "@io_goji//pat:go_default_library",
+    ],
+)

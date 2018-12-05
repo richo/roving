@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// FuzzerStats is a struct of the stats that a that an AFL fuzzer
+// writes to disk at `./fuzzer_stats`
 type FuzzerStats struct {
 	StartTime     uint64
 	LastUpdate    uint64
@@ -34,6 +36,8 @@ type FuzzerStats struct {
 	CommandLine   string
 }
 
+// ParseStats parses an AFL fuzzer_stats file.
+// It returns a FuzzerStats struct.
 func ParseStats(stats string) (*FuzzerStats, error) {
 	var fields_covered uint = 0
 	// Storage for eventual values

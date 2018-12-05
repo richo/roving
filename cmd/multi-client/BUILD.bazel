@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_embed_data", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/richo/roving/cmd/multi-client",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "multi-client",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

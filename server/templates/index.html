@@ -1,72 +1,120 @@
 <!doctype html>
 <html lang=en>
-    <head>
-        <meta charset=utf-8>
-        <title>roving</title>
-    </head>
-    <body>
-		<h1>Fuzzers</h1>
-		<table>
-			<tr>
-				<th>name</th>
-				<th>start_time</th>
-				<th>last_update</th>
-				<th>fuzzer_pid</th>
-				<th>cycles_done</th>
-				<th>execs_done</th>
-				<th>execs_per_sec</th>
-				<th>paths_total</th>
-				<th>paths_favored</th>
-				<th>paths_found</th>
-				<th>paths_imported</th>
-				<th>max_depth</th>
-				<th>cur_path</th>
-				<th>pending_favs</th>
-				<th>pending_total</th>
-				<th>variable_paths</th>
-				<th>bitmap_cvg</th>
-				<th>unique_crashes</th>
-				<th>unique_hangs</th>
-				<th>last_path</th>
-				<th>last_crash</th>
-				<th>last_hang</th>
-				<th>exec_timeout</th>
-				<th>afl_banner</th>
-				<th>afl_version</th>
-				<th>command_line</th>
-			</tr>
-		{{range $node, $state := .}}
-		{{$data := $state.Stats}}
-			<tr>
-				<td>{{$node}}</td>
-				<td>{{$data.StartTime}}</td>
-				<td>{{$data.LastUpdate}}</td>
-				<td>{{$data.FuzzerPid}}</td>
-				<td>{{$data.CyclesDone}}</td>
-				<td>{{$data.ExecsDone}}</td>
-				<td>{{$data.ExecsPerSec}}</td>
-				<td>{{$data.PathsTotal}}</td>
-				<td>{{$data.PathsFavored}}</td>
-				<td>{{$data.PathsFound}}</td>
-				<td>{{$data.PathsImported}}</td>
-				<td>{{$data.MaxDepth}}</td>
-				<td>{{$data.CurPath}}</td>
-				<td>{{$data.PendingFavs}}</td>
-				<td>{{$data.PendingTotal}}</td>
-				<td>{{$data.VariablePaths}}</td>
-				<td>{{$data.BitmapCvg}}</td>
-				<td>{{$data.UniqueCrashes}}</td>
-				<td>{{$data.UniqueHangs}}</td>
-				<td>{{$data.LastPath}}</td>
-				<td>{{$data.LastCrash}}</td>
-				<td>{{$data.LastHang}}</td>
-				<td>{{$data.ExecTimeout}}</td>
-				<td>{{$data.AflBanner}}</td>
-				<td>{{$data.AflVersion}}</td>
-				<td>{{$data.CommandLine}}</td>
-			</tr>
-		{{end}}
-		</table>
-	</body>
-</html>
+  <head>
+    <meta charset=utf-8>
+    <title>roving</title>
+  </head>
+  <body>
+    {{ template "_header" . }}
 
+    <h1>Fuzzers</h1>
+    <table>
+      <thead>
+        <th>name</th>
+        <th>start_time</th>
+        <th>last_update</th>
+        <th>fuzzer_pid</th>
+        <th>cycles_done</th>
+        <th>execs_done</th>
+        <th>execs_per_sec</th>
+        <th>paths_total</th>
+        <th>paths_favored</th>
+        <th>paths_found</th>
+        <th>paths_imported</th>
+        <th>max_depth</th>
+        <th>cur_path</th>
+        <th>pending_favs</th>
+        <th>pending_total</th>
+        <th>variable_paths</th>
+        <th>bitmap_cvg</th>
+        <th>unique_crashes</th>
+        <th>unique_hangs</th>
+        <th>last_path</th>
+        <th>last_crash</th>
+        <th>last_hang</th>
+        <th>exec_timeout</th>
+        <th>afl_banner</th>
+        <th>afl_version</th>
+        <th>command_line</th>
+      </thead>
+    {{range $node, $data:= .Nodes.Stats}}
+      <tr>
+        <td>{{$node}}</td>
+        <td>
+          {{fmtTimestamp $data.StartTime}}<br/><br/>
+          ({{$data.StartTime}})
+        </td>
+        <td>
+          {{fmtTimestamp $data.LastUpdate}}<br/><br/>
+          ({{$data.LastUpdate}})
+        </td>
+        <td>{{$data.FuzzerPid}}</td>
+        <td>{{$data.CyclesDone}}</td>
+        <td>{{$data.ExecsDone}}</td>
+        <td>{{$data.ExecsPerSec}}</td>
+        <td>{{$data.PathsTotal}}</td>
+        <td>{{$data.PathsFavored}}</td>
+        <td>{{$data.PathsFound}}</td>
+        <td>{{$data.PathsImported}}</td>
+        <td>{{$data.MaxDepth}}</td>
+        <td>{{$data.CurPath}}</td>
+        <td>{{$data.PendingFavs}}</td>
+        <td>{{$data.PendingTotal}}</td>
+        <td>{{$data.VariablePaths}}</td>
+        <td>{{$data.BitmapCvg}}</td>
+        <td>{{$data.UniqueCrashes}}</td>
+        <td>{{$data.UniqueHangs}}</td>
+        <td>{{$data.LastPath}}</td>
+        <td>{{$data.LastCrash}}</td>
+        <td>{{$data.LastHang}}</td>
+        <td>{{$data.ExecTimeout}}</td>
+        <td>{{$data.AflBanner}}</td>
+        <td>{{$data.AflVersion}}</td>
+        <td>{{$data.CommandLine}}</td>
+      </tr>
+    {{end}}
+    </table>
+
+    <h1>Client Config</h1>
+    <table>
+      <tr>
+        <th>Command</th>
+        <td>{{joinStringArray .FuzzerConfig.Command " "}}</td>
+      </tr>
+      <tr>
+        <th>Is Binary</th>
+        <td>{{.FuzzerConfig.UseBinary}}</td>
+      </tr>
+      <tr>
+        <th>Sync Interval</th>
+        <td>{{.FuzzerConfig.SyncInterval}}</td>
+      </tr>
+    </table>
+
+    <h1>Archive Config</h1>
+    <table>
+      {{if eq .ArchiveConfig.Type "disk"}}
+        <tr>
+          <th>Dst Path</th>
+          <td>{{.ArchiveConfig.Disk.DstRoot}}</td>
+        </tr>
+      {{end}}
+
+      {{if eq .ArchiveConfig.Type "s3"}}
+        <tr>
+          <th>Dst Path</th>
+          <td>s3://{{.ArchiveConfig.S3.BucketName}}/{{.ArchiveConfig.S3.RootKey}}</td>
+        </tr>
+        <tr>
+          <th>AWS Region</th>
+          <td>{{.ArchiveConfig.S3.AwsRegion}}</td>
+        </tr>
+      {{end}}
+
+      <tr>
+        <th>Interval</th>
+        <td>{{.ArchiveConfig.Interval}}</td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>roving</title>
+  </head>
+  <body>
+    {{ template "_header" . }}
+
+    <h1>Archive Settings</h1>
+    {{if eq .ArchiveConfig.Type ""}}
+      <p>Disabled</p>
+    {{else}}
+      <table>
+        <tr>
+          <th>Type</th>
+          <td>{{.ArchiveConfig.Type}}</td>
+        </tr>
+        <tr>
+          <th>Interval</th>
+          <td>{{.ArchiveConfig.Interval}}</td>
+        </tr>
+
+        {{if eq .ArchiveConfig.Type "disk"}}
+          <tr>
+            <th>Directory</th>
+            <td>{{.ArchiveConfig.Disk.DstRoot}}</td>
+          </tr>
+        {{end}}
+
+        {{if eq .ArchiveConfig.Type "s3"}}
+          <tr>
+            <th>AWS Region</th>
+            <td>{{.ArchiveConfig.S3.AwsRegion}}</td>
+          </tr>
+          <tr>
+            <th>Bucket Name</th>
+            <td>{{.ArchiveConfig.S3.BucketName}}</td>
+          </tr>
+          <tr>
+            <th>Root Key</th>
+            <td>{{.ArchiveConfig.S3.RootKey}}</td>
+          </tr>
+        {{end}}
+      </table>
+    {{end}}
+
+    <h1>Realtime Crash Archive</h1>
+    <ul>
+      {{range $name:= .RealtimeCrashArchive}}
+        <li>{{$name}}</li>
+      {{end}}
+    </ul>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euxo pipefail
+# Builds roving targets and runs tests
+#
+# NOTE: must be run from the roving/ directory
+
+bazel build //cmd/client
+bazel build //cmd/multi-client
+bazel build //cmd/srv
+
+bazel test --test_output=errors ...

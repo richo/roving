@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>roving</title>
+  </head>
+  <body>
+    {{ template "_header" . }}
+
+    <h1>Queue</h1>
+    <table>
+      <thead>
+        <th>fuzzer</th>
+        <th>name</th>
+        <th>string</th>
+        <th>bytes</th>
+      </thead>
+      <tbody>
+      {{range $fuzzerId, $output:= .}}
+        {{range $input:= $output.Queue.Inputs}}
+          <tr>
+            <td>{{$fuzzerId}}</td>
+            <td>
+              <a href="/admin/fuzzer/{{$fuzzerId}}/input/queue/{{$input.Name}}">
+                {{$input.Name}}
+              </a>
+            </td>
+            <td>{{contractString (bytesToStr $input.Body) 20}}</td>
+            <td>{{contractByteArray $input.Body 20}}</td>
+          </tr>
+        {{end}}
+      {{end}}
+      </tbody>
+    </table>
+    <h2>What is this?</h2>
+    <p>
+      This is the centralized AFL test case queue. It is managed
+      by the roving server. Every X seconds (TODO - fill this in
+      from the config) each client pushes its queue up to the server,
+      and pulls down the combined queue of all clients. This allows
+      all clients to benefit from each other's discoveries.
+    </p>
+
+    <h1>Crashes</h1>
+    <table>
+      <thead>
+        <th>fuzzer</th>
+        <th>name</th>
+        <th>string</th>
+        <th>bytes</th>
+      </thead>
+      <tbody>
+      {{range $fuzzerId, $output:= .}}
+        {{range $input:= $output.Crashes.Inputs}}
+          <tr>
+            <td>{{$fuzzerId}}</td>
+            <td>
+              <a href="/admin/fuzzer/{{$fuzzerId}}/input/crashes/{{$input.Name}}">
+                {{$input.Name}}
+              </a>
+            </td>
+            <td>{{contractString (bytesToStr $input.Body) 20}}</td>
+            <td>{{contractByteArray $input.Body 20}}</td>
+          </tr>
+        {{end}}
+      {{end}}
+      </tbody>
+    </table>
+    <h2>What is this?</h2>
+    <p>
+      These are the crashes that each fuzzer has found.
+    </p>
+
+    <h1>Hangs</h1>
+    <table>
+      <thead>
+        <th>name</th>
+        <th>string</th>
+        <th>bytes</th>
+      </thead>
+      {{range $fuzzerId, $output:= .}}
+        {{range $input:= $output.Hangs.Inputs}}
+          <tr>
+            <td>{{$fuzzerId}}</td>
+            <td>
+              <a href="/admin/fuzzer/{{$fuzzerId}}/input/hangs/{{$input.Name}}">
+                {{$input.Name}}
+              </a>
+            </td>
+            <td>{{contractString (bytesToStr $input.Body) 20}}</td>
+            <td>{{contractByteArray $input.Body 20}}</td>
+          </tr>
+        {{end}}
+      {{end}}
+    </table>
+    <h2>What is this?</h2>
+    <p>
+      These are the hangs that each fuzzer has found.
+    </p>
+  </body>
+</html>

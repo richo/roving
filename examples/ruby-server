@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euxo pipefail
+# Starts a roving server for an example Ruby target
+#
+# NOTE: must be run from the roving/ directory
+unamestr=$(echo $(uname) | tr '[:upper:]' '[:lower:]')
+
+mkdir -p examples/server/output
+bazel build //cmd/srv
+bazel-bin/cmd/srv/${unamestr}_amd64_stripped/srv \
+  -workdir ./examples/server \
+  -use-dict \
+  ~/.rbenv/versions/2.4.1/bin/ruby ruby-complex/harness.rb

@@ -1,0 +1,62 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_embed_data", "go_library", "go_test")
+
+# Ignore this file; it's here solely to provide interop with the Go standard
+# toolchain.
+
+# gazelle:exclude dummy.go
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "admin.go",
+        "archiver.go",
+        "metrics_poller.go",
+        "nodes.go",
+        "reaper.go",
+        "server.go",
+        ":webfaceTemplates",  # keep
+    ],
+    importpath = "github.com/richo/roving/server",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//types:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws/session:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/s3:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/s3/s3iface:go_default_library",
+        "@com_github_getsentry_raven_go//:go_default_library",
+        "@com_github_stripe_veneur//ssf:go_default_library",
+        "@com_github_stripe_veneur//trace:go_default_library",
+        "@io_goji//:go_default_library",
+        "@io_goji//pat:go_default_library",
+    ],
+)
+
+go_embed_data(
+    name = "webfaceTemplates",
+    srcs = [
+        "templates/_header.html",
+        "templates/archive.html",
+        "templates/index.html",
+        "templates/input.html",
+        "templates/output.html",
+    ],
+    package = "server",
+    string = True,
+    var = "webfaceTemplates",
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "archiver_test.go",
+        "server_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//types:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/s3:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/s3/s3iface:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)

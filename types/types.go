@@ -3,13 +3,30 @@ package types
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
+	"path/filepath"
 )
 
+// State is a struct representing the current state of a fuzzer
+type State struct {
+	Id        string
+	Stats     FuzzerStats
+	AflOutput AflOutput
+}
+
+type TargetBinary = []byte
+
+// AflOutput is a struct representing the output dir of a fuzzer
+type AflOutput struct {
+	Queue   *InputCorpus
+	Crashes *InputCorpus
+	Hangs   *InputCorpus
+}
+
+// InputCorpus is a collection of Inputs. It is used to represent
+// the crashes, queue and hangs AFL output directories, as well
+// as the input directory.
 type InputCorpus struct {
 	Inputs []Input
 }
@@ -18,97 +35,44 @@ func (i *InputCorpus) Add(other Input) {
 	i.Inputs = append(i.Inputs, other)
 }
 
+// Input is an AFL test case. This can be a test case
+// from anywhere - `output/crashes`, `output/queue`, `output/hangs`,
+// or `input/`.
 type Input struct {
 	Name string
 	Body []byte
 }
 
-func (i *Input) WriteToPath(path string) {
-	path = fmt.Sprintf("%s/%s", path, i.Name)
-
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		log.Panicf("Couldn't open %s for writing", path, err)
-	}
-
-	f.Write(i.Body)
-}
-
-type State struct {
-	Id      string
-	Stats   FuzzerStats
-	Queue   []byte
-	Crashes InputCorpus
-	Hangs   InputCorpus
-}
-
-type Target struct {
-	Metadata TargetMetadata
-	Binary   []byte
-}
-
-type TargetMetadata struct {
-	ShouldDownload bool
-	Command        []string
-}
-
-func ReadStats(path string) FuzzerStats {
-	// TODO urgh panic
-	var buf []byte
-
-	buf, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Couldn't read stats", err)
-	}
-
-	stats, err := ParseStats(string(buf))
-	if err != nil {
-		log.Fatalf("Couldn't read stats", err)
-	}
-
-	return *stats
-}
-
-// Read the contents of a directory out
-func ReadDir(path string) InputCorpus {
-	corpus := InputCorpus{[]Input{}}
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Fatalf("Couldn't open %s", path, err)
-	}
-
-	for _, f := range files {
-		path := fmt.Sprintf("%s/%s", path, f.Name())
-		var buf []byte
-
-		buf, err = ioutil.ReadFile(path)
-		if err != nil {
-			log.Fatalf("Couldn't read %s", path, err)
+// WriteInputCorpusToFile writes each Input in the given
+// InputCorpus to a separate file.
+func WriteInputCorpusToFile(inputCorpus *InputCorpus, dir string) error {
+	for _, input := range inputCorpus.Inputs {
+		// Bail immediately if we can't write an input, since we presumably
+		// won't be able to write any of the others either.
+		if err := WriteInputToFile(&input, dir); err != nil {
+			return err
 		}
-
-		inp := Input{
-			Name: f.Name(),
-			Body: buf,
-		}
-		corpus.Add(inp)
 	}
-	return corpus
+	return nil
 }
 
-func ReadQueue(path string) []byte {
-	cmd := exec.Command("tar", "-cjf", "-", path)
-
-	output, err := cmd.Output()
+// WriteInputToFile writes a single Input to a single file.
+// The filename is given by the name of the Input.
+func WriteInputToFile(i *Input, dir string) error {
+	fp := filepath.Join(dir, i.Name)
+	f, err := os.OpenFile(fp, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		log.Fatalf("Couldn't tar up %s", path, err)
+		return err
 	}
-	return output
+
+	_, err = f.Write(i.Body)
+	return err
 }
 
 func RandInt() (r uint64) {
 	err := binary.Read(rand.Reader, binary.LittleEndian, &r)
 	if err != nil {
-		log.Fatalf("binary.Read failed:", err)
+		log.Fatalf("binary.Read failed: %s", err)
 	}
 	return
 }

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Cleans directories containing lots of gitignored
+# afl output from local testing
+
+rm -rf examples/server/archive
+rm -rf examples/server/output
+rm -rf examples/client/input
+rm -rf examples/client/output
+rm -rf cmd/e2e-test/work
