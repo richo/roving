@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <title>roving</title>
+  </head>
+  <body>
+    {{ template "_header" . }}
+
+    <h1>Input</h1>
+    <table>
+      <tr>
+        <th>Name</th>
+        <td>{{.Name}}</td>
+      </tr>
+      <tr>
+        <th>Body</th>
+        <td>{{bytesToStr .Body}}</td>
+      </tr>
+      <tr>
+        <th>Bytes</th>
+        <td>{{.Body}}</td>
+      </tr>
+    </table>
+  </body>
+</html>

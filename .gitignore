@@ -1,11 +1,14 @@
-client/client
-server/server
 examples/server/target
 examples/client/target
 
-examples/server/crashes/*
-examples/server/hangs/*
-examples/client/work/*
-examples/server/crashes
-examples/server/hangs
-examples/client/work
+examples/server/archive/*
+examples/server/output/*
+examples/server/target.dSYM/*
+
+examples/client/input/*
+examples/client/output/*
+examples/client/dict.txt
+
+cmd/e2e-test/work/*
+
+bazel-*

@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "files.go",
+        "fleet_file_manager.go",
+        "metrics.go",
+        "stats.go",
+        "types.go",
+    ],
+    importpath = "github.com/richo/roving/types",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_getsentry_raven_go//:go_default_library",
+        "@com_github_stripe_veneur//ssf:go_default_library",
+        "@com_github_stripe_veneur//trace:go_default_library",
+        "@com_github_stripe_veneur//trace/metrics:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "files_test.go",
+        "fleet_file_manager_test.go",
+        "stats_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
+)

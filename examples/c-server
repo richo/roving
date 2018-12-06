@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Starts a roving server for an example C target
+#
+# NOTE: must be run from the roving/ directory
+unamestr=$(echo $(uname) | tr '[:upper:]' '[:lower:]')
+# Build based on current platform
+if [[ "$unamestr" == 'linux' ]]; then
+  afl-gcc examples/server/target.c -o examples/server/target
+else
+  afl-clang examples/server/target.c -o examples/server/target
+fi
+
+bazel build //cmd/srv
+bazel-bin/cmd/srv/${unamestr}_amd64_stripped/srv \
+  -binary-path examples/server/target \
+  -workdir ./examples/server \
+  -use-dict

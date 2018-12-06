@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euxo pipefail
+# Runs the e2e test
+#
+# NOTE: must be run from the roving/ directory
+
+unamestr=$(echo $(uname) | tr '[:upper:]' '[:lower:]')
+
+# Build based on current platform
+if [[ "$unamestr" == 'linux' ]]; then
+  afl-gcc examples/server/target.c -o examples/server/target
+else
+  afl-clang examples/server/target.c -o examples/server/target
+fi
+
+rm -rf ./cmd/e2e-test/work/client/*
+rm -rf ./cmd/e2e-test/work/server/*
+bazel build //cmd/e2e-test
+bazel-bin/cmd/e2e-test/${unamestr}_amd64_stripped/e2e-test -workdir "./cmd/e2e-test/work"
+
+n_afl=$(pgrep afl | wc -l)
+if [ $n_afl -gt 0 ]
+then
+    echo "$n_afl AFLs are still alive."
+    read -r -p "Can I run \`pgrep afl | xargs kill\` to make sure they all die? |  [y/N]" response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            echo "Killing AFLs"
+            pgrep afl | xargs kill
+
+            sleep 1
+
+            n_afl=$(pgrep afl | wc -l)
+            if [ $n_afl -gt 0 ]
+            then
+               echo "!!! Failed to kill $n_afl AFLs !!!"
+            else
+               echo "All AFLs are dead!"
+            fi
+            ;;
+        *)
+            echo "OK, not killing"
+            ;;
+    esac
+else
+    echo "All AFLs are dead!"
+fi
+
+
