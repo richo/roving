@@ -54,7 +54,7 @@ func (m AflFileManager) OutputDirToPassIntoAfl() string {
 	return filepath.Join(m.basedir, "output")
 }
 
-// Writes all of the corpuses in AflOutput to the correct
+// WriteOutput writes all of the corpuses in AflOutput to the correct
 // location on disk.
 func (m AflFileManager) WriteOutput(output *AflOutput) error {
 	var err error

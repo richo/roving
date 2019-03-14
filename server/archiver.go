@@ -161,7 +161,7 @@ func (a DiskArchiver) archiveOne(absSrcPath, relDstPath string) error {
 	return nil
 }
 
-// LisDstFiles returns the names of all files in the given
+// LsDstFiles returns the names of all files in the given
 // dir. It does not include directory names, and  does not
 // walk sub-trees.
 func (a DiskArchiver) LsDstFiles(dstSubRoot string) ([]string, error) {
