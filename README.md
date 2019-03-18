@@ -161,6 +161,6 @@ you're working with it. Plus the testcases go roving and it's all very poetic.
 
 
 [0]: https://en.wikipedia.org/wiki/Roving
-[afl-ruby]: https://github.com/richo/roving
 [stripe]: https://stripe.com
 [robert]: https://github.com/robert
+[afl-ruby]: https://github.com/richo/afl-ruby
