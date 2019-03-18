@@ -154,5 +154,13 @@ I asked some of my coworkers what they'd name a distributed fuzzy thing.
 Evidently [roving][0] is extremely fuzzy, and winds up **everywhere** when
 you're working with it. Plus the testcases go roving and it's all very poetic.
 
+# Credit
+
+* [Stripe][stripe] has substantially contributed to Roving, by directly supporting its development in paid time, as well as contributing that development back to the open source project.
+* [Rob Heaton][robert] spent huge amounts of time adding features, finding bugs, and documenting the project.
+
+
 [0]: https://en.wikipedia.org/wiki/Roving
 [afl-ruby]: https://github.com/richo/roving
+[stripe]: https://stripe.com
+[robert]: https://github.com/robert
