@@ -12,6 +12,7 @@ else
   afl-clang examples/server/target.c -o examples/server/target
 fi
 
+mkdir ./examples/server/output
 bazel build //cmd/srv
 bazel-bin/cmd/srv/${unamestr}_amd64_stripped/srv \
   -binary-path examples/server/target \
