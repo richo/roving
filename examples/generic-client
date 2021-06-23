@@ -14,4 +14,4 @@ bazel build //cmd/client
 mkdir -p examples/client
 cd examples/client
 ../../bazel-bin/cmd/client/${unamestr}_amd64_stripped/client \
-  -server-address http://localhost:1414
+  -server-address ${MASTERURL}:1414
